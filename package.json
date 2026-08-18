@@ -1,0 +1,15 @@
+{
+  "name": "affiliate-saas-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev:api": "pnpm --filter api start:dev",
+    "dev:worker": "pnpm --filter worker start:dev",
+    "dev:web": "pnpm --filter web dev",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build"
+  },
+  "engines": { "node": ">=20.0.0" }
+}

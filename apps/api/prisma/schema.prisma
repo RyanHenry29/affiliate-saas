@@ -1,0 +1,130 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum PlanTier {
+  STARTER
+  PRO
+  AGENCY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+model Tenant {
+  id            String        @id @default(uuid())
+  name          String
+  isAdminMaster Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  subscription  Subscription?
+  users         User[]
+  groups        Group[]
+  instances     MessagingInstance[]
+
+  @@index([isAdminMaster])
+}
+
+model Subscription {
+  id                 String             @id @default(uuid())
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId           String             @unique
+  plan               PlanTier
+  status             SubscriptionStatus
+  externalCustomerId String // ID no gateway de pagamento (Stripe/Mercado Pago)
+  externalSubId      String?
+  currentPeriodEnd   DateTime
+  updatedAt          DateTime           @updatedAt
+
+  @@index([status, currentPeriodEnd])
+}
+
+model User {
+  id           String   @id @default(uuid())
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId     String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("MEMBER") // MEMBER | OWNER | ADMIN_MASTER
+  createdAt    DateTime @default(now())
+  refreshTokens RefreshToken[]
+
+  @@index([tenantId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model MessagingInstance {
+  id         String   @id @default(uuid())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId   String
+  provider   String   // "whatsapp" | "telegram"
+  externalId String   // instance name na Evolution API / bot token hash
+  status     String   @default("DISCONNECTED")
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, provider])
+}
+
+model Group {
+  id         String   @id @default(uuid())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId   String
+  externalId String   // ID do grupo no provider
+  name       String
+  nicheTags  String[] // nichos que este grupo recebe ("DONA_DE_CASA", ...)
+  active     Boolean  @default(true)
+
+  @@index([tenantId])
+}
+
+model Offer {
+  id                String   @id @default(uuid())
+  marketplace       String   // "shopee" | "amazon" | "aliexpress" | "awin"
+  externalSku       String
+  title             String
+  affiliateUrl      String
+  imageUrl          String?
+  priceCents        Int
+  originalPriceCents Int     @default(0)
+  discountPercent   Float    @default(0) // 0..100
+  rating            Float    @default(0)
+  nicheTag          String   @default("GERAL") // DONA_DE_CASA | AUTOMOTIVO | ...
+  scrapedAt         DateTime @default(now())
+  dedupeHash        String   @unique // hash(marketplace + externalSku) — evita reprocessamento
+
+  @@index([marketplace, scrapedAt])
+  @@index([nicheTag])
+}
+
+model DispatchJob {
+  id           String   @id @default(uuid())
+  tenantId     String
+  offerId      String
+  groupId      String
+  status       String   @default("PENDING") // PENDING | SENT | FAILED | RATE_LIMITED
+  attempts     Int      @default(0)
+  scheduledFor DateTime
+  createdAt    DateTime @default(now())
+  sentAt       DateTime?
+
+  @@index([tenantId, status, scheduledFor])
+}

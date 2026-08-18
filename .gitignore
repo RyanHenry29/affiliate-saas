@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnpm/
+
+# Build outputs
+dist/
+.next/
+out/
+*.tsbuildinfo
+.turbo/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Local tooling state
+kilo.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Caches
+.cache/
+.eslintcache
+
+# Tools (binaries, DB data, Redis)
+tools/
+
+# Prisma migrations history
+apps/api/prisma/migrations/
