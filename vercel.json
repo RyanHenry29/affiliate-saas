@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "apps/web/package.json", "use": "@vercel/next" }
-  ]
+  "installCommand": "npm install -g pnpm@9.12.0 && pnpm --filter web install --prod=false",
+  "buildCommand": "pnpm --filter web build",
+  "outputDirectory": ".next",
+  "framework": "nextjs"
 }
