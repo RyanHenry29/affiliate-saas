@@ -20,6 +20,9 @@ import { BillingModule } from './modules/billing/billing.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { AiProviderModule } from './modules/ai-provider/ai-provider.module';
 import { AutomationModule } from './modules/automation/automation.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { MonitoringModule } from './modules/monitoring/monitoring.module';
+import { HealthModule } from './health/health.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -47,6 +50,9 @@ import { RolesGuard } from './common/guards/roles.guard';
     PaymentsModule,
     AiProviderModule,
     AutomationModule,
+    AnalyticsModule,
+    MonitoringModule,
+    HealthModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

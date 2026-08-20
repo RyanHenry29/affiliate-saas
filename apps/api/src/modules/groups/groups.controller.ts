@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
@@ -10,8 +10,12 @@ export class GroupsController {
   constructor(private groupsService: GroupsService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser) {
-    return this.groupsService.list(user.tenantId);
+  list(
+    @CurrentUser() user: AuthUser,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.groupsService.list(user.tenantId, Number(page) || 1, Number(limit) || 50);
   }
 
   @Post()

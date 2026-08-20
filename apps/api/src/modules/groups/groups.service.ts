@@ -7,11 +7,18 @@ import { UpdateGroupDto } from './dto/update-group.dto';
 export class GroupsService {
   constructor(private prisma: PrismaService) {}
 
-  async list(tenantId: string) {
-    return this.prisma.group.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: 'desc' },
-    });
+  async list(tenantId: string, page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.prisma.group.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.group.count({ where: { tenantId } }),
+    ]);
+    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async create(tenantId: string, dto: CreateGroupDto) {

@@ -1,3 +1,4 @@
+import type { WorkspaceInfo } from '@affiliate-saas/shared-types';
 export * from '@affiliate-saas/shared-types';
 
 export interface AuthTokens {

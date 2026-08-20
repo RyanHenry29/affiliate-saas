@@ -20,6 +20,13 @@ enum SubscriptionStatus {
   TRIALING
 }
 
+enum OfferStatus {
+  PENDING
+  PUBLISHED
+  IGNORED
+  FAILED
+}
+
 model Tenant {
   id            String        @id @default(uuid())
   name          String
@@ -54,6 +61,7 @@ model User {
   email        String   @unique
   passwordHash String
   role         String   @default("MEMBER") // MEMBER | OWNER | ADMIN_MASTER
+  isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   refreshTokens RefreshToken[]
 
@@ -77,7 +85,9 @@ model MessagingInstance {
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tenantId   String
   provider   String   // "whatsapp" | "telegram"
-  externalId String   // instance name na Evolution API / bot token hash
+  name       String
+  externalId String?  // instance name na Evolution API / bot token hash
+  instanceId String   @default("")
   status     String   @default("DISCONNECTED")
   createdAt  DateTime @default(now())
 
@@ -92,6 +102,7 @@ model Group {
   name       String
   nicheTags  String[] // nichos que este grupo recebe ("DONA_DE_CASA", ...)
   active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
 
   @@index([tenantId])
 }
@@ -108,11 +119,25 @@ model Offer {
   discountPercent   Float    @default(0) // 0..100
   rating            Float    @default(0)
   nicheTag          String   @default("GERAL") // DONA_DE_CASA | AUTOMOTIVO | ...
+  status            OfferStatus @default(PENDING)
   scrapedAt         DateTime @default(now())
+  dispatched        Boolean  @default(false)
   dedupeHash        String   @unique // hash(marketplace + externalSku) — evita reprocessamento
+  priceHistory      OfferPriceHistory[]
 
   @@index([marketplace, scrapedAt])
   @@index([nicheTag])
+  @@index([status])
+}
+
+model OfferPriceHistory {
+  id         String   @id @default(uuid())
+  offer      Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  offerId    String
+  priceCents Int
+  createdAt  DateTime @default(now())
+
+  @@index([offerId, createdAt])
 }
 
 model DispatchJob {
@@ -127,4 +152,147 @@ model DispatchJob {
   sentAt       DateTime?
 
   @@index([tenantId, status, scheduledFor])
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  tenantId    String?
+  key         String
+  enabled     Boolean  @default(false)
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@unique([key, tenantId])
+  @@index([tenantId])
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  tenantId    String
+  amount      Int
+  method      String
+  status      String
+  type        String
+  description String?
+  externalId  String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([externalId])
+}
+
+model AiProvider {
+  id              String   @id @default(uuid())
+  tenantId        String
+  provider        String
+  model           String
+  apiKeyEncrypted String
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model Connection {
+  id                   String   @id @default(uuid())
+  tenantId             String
+  marketplace          String
+  label                String
+  credentialsEncrypted String
+  isActive             Boolean  @default(true)
+  lastSyncAt           DateTime?
+  createdAt            DateTime @default(now())
+  metadata             Json?
+
+  @@index([tenantId])
+}
+
+model Invite {
+  id          String    @id @default(uuid())
+  tenantId    String
+  email       String
+  token       String    @unique
+  status      String
+  acceptedById String?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([tenantId])
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  tenantId   String
+  name       String
+  keyHash    String    @unique
+  prefix     String
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  @@index([tenantId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String
+  action    String
+  entity    String
+  entityId  String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model WebhookEndpoint {
+  id        String    @id @default(uuid())
+  tenantId  String
+  url       String
+  events    String[]
+  secret    String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model AutomationRule {
+  id         String   @id @default(uuid())
+  tenantId   String?
+  name       String
+  trigger    String
+  condition  String
+  action     String
+  isActive   Boolean  @default(true)
+  config     Json?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+// Configuração de planos/preços — editável pelo admin master (não hardcoded)
+model PlanConfig {
+  tier            PlanTier @id
+  name            String
+  priceCents      Int      @default(0)
+  apiCallsLimit   Int      @default(0)
+  dispatchesLimit Int      @default(0)
+  features        Json
+  active          Boolean  @default(true)
+  updatedAt       DateTime @updatedAt
+}
+
+// Configuração de pagamento via PIX (QR copia-e-cola) — definida pelo admin master
+model PaymentConfig {
+  id              String    @id // "default"
+  pixKey          String?
+  pixMerchantName String?
+  pixCity         String?
+  pixCopiaECola   String?
+  pixEnabled      Boolean   @default(false)
+  pixInstructions String?
+  updatedAt       DateTime  @updatedAt
 }

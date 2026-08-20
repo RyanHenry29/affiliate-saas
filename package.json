@@ -2,7 +2,6 @@
   "name": "affiliate-saas-monorepo",
   "private": true,
   "packageManager": "pnpm@9.12.0",
-  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev:api": "pnpm --filter api start:dev",
     "dev:worker": "pnpm --filter worker start:dev",

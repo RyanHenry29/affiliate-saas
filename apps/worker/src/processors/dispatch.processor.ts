@@ -34,9 +34,29 @@ export class DispatchProcessor {
     });
   }
 
+  private lastSentAt = new Map<string, number>();
+
+  private async throttle(externalId: string): Promise<void> {
+    const minIntervalMs = Number(this.config.get('DISPATCH_MIN_INTERVAL_MS', '800'));
+    const now = Date.now();
+    const last = this.lastSentAt.get(externalId) ?? 0;
+    const wait = minIntervalMs - (now - last);
+    if (wait > 0) {
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
+    this.lastSentAt.set(externalId, Date.now());
+  }
+
+  private async updateJobStatus(dispatchJobId: string | undefined, status: 'SENT' | 'FAILED') {
+    if (!dispatchJobId) return;
+    await this.prisma.dispatchJob
+      .update({ where: { id: dispatchJobId }, data: { status, sentAt: status === 'SENT' ? new Date() : undefined } })
+      .catch((err) => this.logger.error(`Falha ao atualizar dispatchJob ${dispatchJobId}: ${err?.message ?? err}`));
+  }
+
   private async processJob(job: Job<DispatchJobInput>): Promise<void> {
-    const { tenantId, offerId, groupId } = job.data;
-    this.logger.log(`Processing dispatch: offer=${offerId} group=${groupId}`);
+    const { tenantId, offerId, groupId, dispatchJobId } = job.data;
+    this.logger.log(`Processing dispatch: offer=${offerId} group=${groupId} job=${dispatchJobId}`);
 
     const [offer, group, instance] = await Promise.all([
       this.prisma.offer.findUnique({ where: { id: offerId } }),
@@ -47,23 +67,39 @@ export class DispatchProcessor {
       }),
     ]);
 
-    if (!offer || !group || !instance) {
-      this.logger.warn(`Missing data for dispatch: offer=${!!offer} group=${!!group} instance=${!!instance}`);
-      return;
+    if (!offer || !group || !instance || !instance.externalId) {
+      const detail = `offer=${!!offer} group=${!!group} instance=${!!instance} instanceExternalId=${!!instance?.externalId}`;
+      this.logger.warn(`Dados ausentes para dispatch (${detail}) — job=${dispatchJobId}`);
+      if (job.attemptsMade >= (job.opts.attempts as number)) {
+        await this.updateJobStatus(dispatchJobId, 'FAILED');
+      }
+      throw new Error(`Dados ausentes para dispatch: ${detail}`);
     }
 
-    const prompt = `Oferta: ${offer.title}\nPreço: R$ ${(offer.priceCents / 100).toFixed(2)}\nDesconto: ${offer.discountPercent}%\nLink: ${offer.affiliateUrl}`;
-    const text = await this.llm.generate(prompt, undefined, tenantId);
+    try {
+      await this.throttle(instance.externalId);
+      const prompt = `Oferta: ${offer.title}\nPreço: R$ ${(offer.priceCents / 100).toFixed(2)}\nDesconto: ${offer.discountPercent}%\nLink: ${offer.affiliateUrl}`;
+      const text = await this.llm.generate(prompt, undefined, tenantId);
 
-    const result = await this.evolution.sendMessage(instance.externalId, group.externalId, text);
+      const result = await this.evolution.sendMessage(instance.externalId, group.externalId, text);
 
-    if (!result.ok) {
-      throw new Error(result.error || 'Failed to send message');
+      if (!result.ok) {
+        throw new Error(result.error || 'Failed to send message');
+      }
+
+      await this.prisma.dispatchJob.update({
+        where: { id: dispatchJobId },
+        data: { status: 'SENT', sentAt: new Date() },
+      });
+      this.logger.log(`Dispatch enviado: job=${dispatchJobId} offer=${offerId}`);
+    } catch (err: any) {
+      const message = err?.message ?? String(err);
+      this.logger.error(`Falha no dispatch job=${dispatchJobId}: ${message}`);
+      const maxAttempts = (job.opts.attempts as number) ?? 3;
+      if (job.attemptsMade >= maxAttempts) {
+        await this.updateJobStatus(dispatchJobId, 'FAILED');
+      }
+      throw err;
     }
-
-    await this.prisma.dispatchJob.update({
-      where: { id: job.data.dispatchJobId },
-      data: { status: 'SENT', sentAt: new Date() },
-    });
   }
 }

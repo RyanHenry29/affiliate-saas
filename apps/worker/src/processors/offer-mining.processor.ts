@@ -82,7 +82,6 @@ export class OfferMiningProcessor {
           affiliateUrl: offer.affiliateUrl,
         },
         create: {
-          tenantId,
           marketplace,
           externalSku: offer.externalSku,
           title: offer.title,
@@ -98,9 +97,9 @@ export class OfferMiningProcessor {
       });
     }
 
-    await this.prisma.marketplaceConnection.update({
+    await this.prisma.connection.update({
       where: { id: connectionId },
-      data: { lastSyncAt: new Date(), status: 'CONNECTED' },
+      data: { lastSyncAt: new Date(), isActive: true },
     });
   }
 }

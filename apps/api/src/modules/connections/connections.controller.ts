@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, Query } from '@nestjs/common';
 import { ConnectionsService } from './connections.service';
 import { UpsertCredentialDto } from './dto/upsert-credential.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -14,8 +14,12 @@ export class ConnectionsController {
   }
 
   @Get()
-  list(@CurrentUser() user: AuthUser) {
-    return this.connectionsService.list(user.tenantId);
+  list(
+    @CurrentUser() user: AuthUser,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.connectionsService.list(user.tenantId, Number(page) || 1, Number(limit) || 50);
   }
 
   @Post()

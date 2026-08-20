@@ -2,7 +2,7 @@
 
 Este arquivo é carregado automaticamente em toda sessão de codegen neste repo.
 Não repita/regenere este contexto manualmente por tela — cole apenas o prompt
-específico da tela (ver `docs/prompts-ui.md`).
+específico da tela.
 
 > Os tokens abaixo já estão implementados em `apps/web/src/app/globals.css` e
 > `apps/web/tailwind.config.ts`. Se for alterar um token, altere lá primeiro e
@@ -105,3 +105,172 @@ Antes de criar um componente novo, verifique se já existe um equivalente aí.
   problema de UI resolver, mas não esconda o risco atrás de uma UX "tudo certo").
 - O `.env` do repo tem valores de desenvolvimento local — nunca commitar `.env` com
   valores reais de produção (Stripe, JWT secrets, etc.).
+
+---
+
+## 📋 Checklist SaaS Profissional (24 itens obrigatórios)
+
+Estrutura referência para o projeto:
+
+```
+/
+├── app/
+│   ├── page.tsx                 ← Landing
+│   ├── login/
+│   ├── cadastro/
+│   ├── dashboard/
+│   ├── pricing/
+│   ├── contato/
+│   ├── privacidade/
+│   ├── cookies/
+│   ├── termos/
+│   ├── 404/
+│   └── ...
+├── components/
+├── lib/
+├── api/
+├── public/
+│   ├── images/
+│   ├── favicon.ico
+│   ├── robots.txt
+│   └── sitemap.xml
+├── styles/
+└── ...
+```
+
+### FASE 1 — Fundação (itens 1-7)
+
+#### 1. Responsividade
+Layout adaptativo para celular/tablet/notebook/monitor grande. Usar `max-width` + `width: 100%`, nunca `width: 1200px` fixo. Container: `width: min(1200px, 92%)`.
+
+#### 2. Navegação
+UX + SEO. Estrutura: Logo → Produto → Recursos → Como funciona → Preços → FAQ → [Entrar] → [Testar grátis]. Dashboard: Visão geral → Clientes → Relatórios → Configurações → Perfil → Sair. Menos cliques = menos atrito.
+
+#### 3. Velocidade de carregamento
+- Imagens: WebP/AVIF, não PNG/JPG gigantes
+- JavaScript: só o necessário
+- Fontes: poucos pesos
+- Lazy loading em imagens abaixo da dobra
+- Next.js: server components quando possível
+- Manter LCP/CLS/INP baixos
+
+#### 4. SEO otimizado
+Title, Description, H1/H2, URLs limpas, links internos, imagens, Schema, Sitemap, Robots, Conteúdo. Não keyword stuffing.
+
+#### 5. Formulário de leads
+Frontend → API → Validação → Banco → CRM/WhatsApp/E-mail. Campos: nome, email, telefone, empresa, origem (Google/Instagram/Indicação/Landing Page/Anúncio), data, status.
+
+#### 6. Prova social
+Depoimentos reais, números verdadeiros, clientes/logos, cases, resultados. Nunca inventar números.
+
+#### 7. Rodapé completo
+Produto (Recursos, Preços, Integrações) → Empresa (Sobre, Contato) → Suporte (Central, FAQ) → Legal (Privacidade, Cookies, Termos) → Redes sociais.
+
+### FASE 2 — Performance (itens 8-12)
+
+#### 8. HTTPS
+Obrigatório. Vercel fornece automaticamente. Protege comunicação, evita mensagem "Não seguro".
+
+#### 9. Proteção contra spam
+- CAPTCHA/Turnstile
+- Rate limiting (ex: 100 req/min)
+- Validação server-side
+- Honeypot
+- Bloqueio de IP abusivo
+- Nunca confiar só no frontend
+
+#### 10. Acessibilidade
+- Contraste mínimo AA
+- Navegação por teclado (TAB, ENTER, ESC)
+- Alt text em imagens
+- Botões reais (`<button>`, não `<div onclick>`)
+- Labels em formulários
+
+#### 11. Google Analytics
+Eventos: page_view, click_cta, signup_started, signup_completed, trial_started, purchase. Métrica importante: conversão, não apenas visitas.
+
+#### 12. Google Search Console
+Cadastrar domínio, acompanhar impressões, cliques, CTR, posição média, consultas, páginas indexadas. Enviar sitemap.
+
+### FASE 3 — SEO (itens 13-18)
+
+#### 13. Sitemap.xml
+Mapa das páginas para Google. Gerar automaticamente no Next.js.
+
+#### 14. Robots.txt
+Informar crawlers o que acessar. Não indexar: /dashboard, /configuracoes, /api, /login.
+
+#### 15. Domínio
+- `www.seusaas.com.br` → Landing page
+- `app.seusaas.com.br` → Aplicação
+- `api.seusaas.com.br` → API
+Nunca usar `meu-saas.vercel.app` em produção.
+
+#### 16. Meta Title
+Cada página com título único e descritivo. Ex: "Planos e Preços | NomeSaaS".
+
+#### 17. Imagens em WebP
+Padronizar WebP. Compressão: hero.webp 120KB, dashboard.webp 180KB. Gerar tamanhos diferentes (400px, 800px, 1200px).
+
+#### 18. Cache e CDN
+Vercel CDN automático para conteúdo estático. Cuidado: não colocar dados privados em cache público.
+
+### FASE 4 — Conversão (itens 19-23)
+
+#### 19. Erro 404
+Página amigável com "Página não encontrada" + botão "Voltar para início" + busca + link para dashboard.
+
+#### 20. Política de Privacidade
+Explicar: dados coletados, motivo, uso, compartilhamento, tempo de armazenamento, direitos do usuário, como solicitar exclusão, contato. Não copiar política aleatória.
+
+#### 21. Política de Cookies
+Identificar cookies reais: essenciais, analytics, marketing, preferências. Gestão de consentimento.
+
+#### 22. Termos de Uso
+Definir: objeto, cadastro, responsabilidade, planos, pagamento, cancelamento, uso permitido/proibido, propriedade intelectual, disponibilidade, limitações, suspensão, encerramento.
+
+#### 23. LGPD
+Pensar desde a arquitetura: Que dado? Por quê? Onde está? Quem acessa? Por quanto tempo? Pode excluir/exportar/alterar? Proteger dados sensíveis.
+
+### FASE 5 — Segurança/Jurídico (itens 24)
+
+#### 24. Backup
+- Backup automático diário
+- Armazenamento separado
+- Retenção e versionamento
+- **TESTAR RESTAURAÇÃO** (ter backup ≠ conseguir restaurar)
+
+---
+
+## 🔧 Infraestrutura SaaS (além dos 24 itens)
+
+Para transformar landing page em SaaS profissional:
+
+- 🔐 Autenticação (Supabase Auth / JWT)
+- 👤 Usuários e permissões (RBAC)
+- 🗄️ Banco de dados (PostgreSQL)
+- 💳 Cobrança/assinaturas (Stripe)
+- 🔑 Recuperação de senha
+- 📧 Envio de e-mail
+- 🛡️ Rate limiting nas APIs
+- 🔒 Proteção das APIs
+- 📝 Logs de auditoria
+- 📊 Monitoramento de erros
+- 🔄 Migrations do banco
+- 🧪 Testes (unitários, integração)
+- 🚀 CI/CD (GitHub Actions)
+- 🌎 Variáveis de ambiente
+- 📦 Staging/produção
+- 🔥 Sistema de recuperação em falha
+
+---
+
+## 🎯 Ordem de implementação recomendada
+
+| Fase | Itens | Prioridade |
+|------|-------|------------|
+| 1 - Fundação | Domínio, HTTPS, Estrutura, Responsividade, Navegação, 404, Footer | Alta |
+| 2 - Performance | Velocidade, WebP, Cache, CDN, Otimização JS/CSS | Alta |
+| 3 - SEO | SEO, Meta Title, Sitemap, Robots, Search Console | Média |
+| 4 - Conversão | Landing, CTA, Formulário leads, Prova social, Analytics | Alta |
+| 5 - Segurança | Anti-spam, Acessibilidade, Privacidade, Cookies, Termos, LGPD, Backup | Média |

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /configuracoes/
+Disallow: /api/
+Disallow: /login/
+Disallow: /admin/
+
+Sitemap: https://affiliate-saas-api.vercel.app/sitemap.xml

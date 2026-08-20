@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -21,8 +21,7 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
-        password: hashed,
-        name: dto.name,
+        passwordHash: hashed,
         tenantId: tenant.id,
         role: 'OWNER',
       },
@@ -35,7 +34,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!user) throw new UnauthorizedException('Credenciais inválidas');
 
-    const valid = await bcrypt.compare(dto.password, user.password);
+    const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('Credenciais inválidas');
 
     return this.generateTokens(user);
@@ -48,10 +47,43 @@ export class AuthService {
   }
 
   async getMe(userId: string) {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, name: true, role: true, tenantId: true, isAdminMaster: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isActive: true,
+        tenantId: true,
+        createdAt: true,
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            isAdminMaster: true,
+            subscription: {
+              select: {
+                plan: true,
+                status: true,
+                currentPeriodEnd: true,
+              },
+            },
+          },
+        },
+      },
     });
+    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      tenantId: user.tenantId,
+      tenantName: user.tenant.name,
+      isAdminMaster: user.tenant.isAdminMaster,
+      subscription: user.tenant.subscription,
+      createdAt: user.createdAt,
+    };
   }
 
   async logout(userId: string) {

@@ -21,9 +21,86 @@ export type MarketplaceName =
 
 export type ConnectionStatus = 'DISCONNECTED' | 'CONNECTED' | 'SYNCING' | 'ERROR';
 export type DispatchStatus = 'PENDING' | 'SENT' | 'FAILED' | 'RATE_LIMITED';
-export type Role = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'DEV_MEMBER';
+export type InstanceStatus = 'CONNECTED' | 'CONNECTING' | 'DISCONNECTED' | 'FAILED';
+export type Role = 'MEMBER' | 'OWNER' | 'ADMIN_MASTER' | 'OPERATOR' | 'ANALYST' | 'VIEWER';
 export type PlanTier = 'STARTER' | 'PRO' | 'AGENCY';
 export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING';
+
+export interface Subscription {
+  id: string;
+  tenantId: string;
+  plan: PlanTier;
+  status: SubscriptionStatus;
+  currentPeriodEnd: string;
+}
+
+export interface PlanConfig {
+  tier: PlanTier;
+  name: string;
+  priceCents: number;
+  apiCallsLimit: number;
+  dispatchesLimit: number;
+  features: string[];
+  active: boolean;
+  updatedAt?: string;
+}
+
+export interface PaymentConfig {
+  id: string;
+  pixKey: string | null;
+  pixMerchantName: string | null;
+  pixCity: string | null;
+  pixCopiaECola: string | null;
+  pixEnabled: boolean;
+  pixInstructions: string | null;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  role: Role;
+  isActive: boolean;
+  createdAt: string;
+  tenant: {
+    id: string;
+    name: string;
+    isAdminMaster: boolean;
+  };
+}
+
+export interface AdminInvite {
+  id: string;
+  email: string;
+  status: string;
+  expiresAt: string | null;
+  createdAt: string;
+  tenantName: string | null;
+}
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresIn: number;
+}
+
+export interface AuthUserResponse {
+  id: string;
+  email: string;
+  tenantId: string;
+  role: string;
+  isAdminMaster: boolean;
+  tenantName: string;
+}
+
+export interface LoginResponse extends AuthTokens {
+  user: AuthUserResponse;
+}
+
+export interface ApiErrorBody {
+  message?: string | string[];
+  error?: string;
+  statusCode?: number;
+}
 
 export interface AuthUser {
   id: string;
@@ -32,6 +109,11 @@ export interface AuthUser {
   role: Role;
   isAdminMaster: boolean;
   tenantName: string;
+  subscription?: {
+    plan: PlanTier;
+    status: SubscriptionStatus;
+    currentPeriodEnd: string;
+  } | null;
 }
 
 export interface WorkspaceInfo {
@@ -61,6 +143,22 @@ export interface ManualOfferInput {
   nicheTag?: NicheTag;
 }
 
+export type OfferStatus = 'PENDING' | 'PUBLISHED' | 'IGNORED' | 'FAILED';
+
+export const OFFER_STATUS_LABELS: Record<OfferStatus, string> = {
+  PENDING: 'Pendente',
+  PUBLISHED: 'Publicada',
+  IGNORED: 'Ignorada',
+  FAILED: 'Com erro',
+};
+
+export const OFFER_STATUS_CLS: Record<OfferStatus, string> = {
+  PENDING: 'border-warning/30 bg-warning/10 text-warning',
+  PUBLISHED: 'border-success/30 bg-success/10 text-success',
+  IGNORED: 'border-border bg-secondary/60 text-muted-foreground',
+  FAILED: 'border-destructive/30 bg-destructive/10 text-destructive',
+};
+
 export interface OfferNormalized {
   id: string;
   marketplace: MarketplaceName;
@@ -73,15 +171,19 @@ export interface OfferNormalized {
   discountPercent: number;
   rating: number;
   nicheTag: NicheTag;
+  status: OfferStatus;
   dedupeHash: string;
   scrapedAt: string;
 }
 
+export type Offer = OfferNormalized;
+
 export interface Group {
   id: string;
+  tenantId: string;
   externalId: string;
   name: string;
-  nicheTags: string[];
+  nicheTags: NicheTag[];
   active: boolean;
 }
 
@@ -120,7 +222,9 @@ export interface AuditLog {
 export interface BillingStatus {
   plan: PlanTier;
   status: SubscriptionStatus;
-  currentPeriodEnd: string;
+  currentPeriodEnd: string | null;
+  planName: string;
+  priceCents: number;
   apiCallsThisMonth: number;
   apiCallsLimit: number;
   dispatchesThisMonth: number;
@@ -244,10 +348,15 @@ export interface AutomationRule {
 }
 
 export const ROLE_LABELS: Record<Role, string> = {
-  SUPER_ADMIN: 'Super Admin',
-  ORG_ADMIN: 'Admin da Organização',
-  DEV_MEMBER: 'Dev Member',
+  MEMBER: 'Membro',
+  OWNER: 'Proprietário',
+  ADMIN_MASTER: 'Admin Master',
+  OPERATOR: 'Operador',
+  ANALYST: 'Analista',
+  VIEWER: 'Visualizador',
 };
+
+export const ROLE_OPTIONS: Role[] = ['OWNER', 'OPERATOR', 'ANALYST', 'MEMBER', 'VIEWER'];
 
 export const PLAN_LABELS: Record<PlanTier, string> = {
   STARTER: 'Starter',
@@ -279,15 +388,23 @@ export const NICHE_LABELS: Record<NicheTag, string> = {
 };
 
 export const STATUS_COLORS: Record<string, string> = {
-  CONNECTED: 'text-green-600 bg-green-50',
-  DISCONNECTED: 'text-gray-500 bg-gray-50',
-  SYNCING: 'text-blue-600 bg-blue-50',
-  ERROR: 'text-red-600 bg-red-50',
-  SENT: 'text-green-600 bg-green-50',
-  PENDING: 'text-yellow-600 bg-yellow-50',
-  FAILED: 'text-red-600 bg-red-50',
-  ACTIVE: 'text-green-600 bg-green-50',
-  PAST_DUE: 'text-orange-600 bg-orange-50',
-  CANCELED: 'text-red-600 bg-red-50',
-  TRIALING: 'text-blue-600 bg-blue-50',
+  CONNECTED: 'text-success bg-success/10',
+  DISCONNECTED: 'text-muted-foreground bg-muted',
+  SYNCING: 'text-primary bg-primary/10',
+  ERROR: 'text-destructive bg-destructive/10',
+  SENT: 'text-success bg-success/10',
+  PENDING: 'text-warning bg-warning/10',
+  FAILED: 'text-destructive bg-destructive/10',
+  ACTIVE: 'text-success bg-success/10',
+  PAST_DUE: 'text-warning bg-warning/10',
+  CANCELED: 'text-destructive bg-destructive/10',
+  TRIALING: 'text-primary bg-primary/10',
+  PAID: 'text-success bg-success/10',
+  OPEN: 'text-warning bg-warning/10',
+  CONFIRMED: 'text-success bg-success/10',
+  ACCEPTED: 'text-success bg-success/10',
 };
+
+export const NICHE_TAGS: NicheTag[] = Object.keys(
+  NICHE_LABELS,
+) as NicheTag[];

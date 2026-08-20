@@ -2,13 +2,20 @@
 
 import { useState } from 'react';
 import useSWR from 'swr';
+import { motion, useReducedMotion, type Variants } from 'framer-motion';
+import { Plus, Users, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { Group, NicheTag } from '@/lib/types';
 import { NICHE_LABELS } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { toastError, toastSuccess } from '@/lib/toast';
 
 const fetcher = (url: string) => api.get(url);
 
 export default function GroupsPage() {
+  const reduce = useReducedMotion();
   const { data: groups, isLoading, mutate } = useSWR('/groups', fetcher);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ externalId: '', name: '', nicheTags: '' });
@@ -26,8 +33,9 @@ export default function GroupsPage() {
       setShowForm(false);
       setForm({ externalId: '', name: '', nicheTags: '' });
       mutate();
+      toastSuccess('Grupo criado');
     } catch (err: any) {
-      alert(err.message || 'Erro ao criar grupo');
+      toastError(err, 'Erro ao criar grupo');
     } finally {
       setSaving(false);
     }
@@ -38,118 +46,167 @@ export default function GroupsPage() {
       await api.put(`/groups/${group.id}`, { active: !group.active });
       mutate();
     } catch (err: any) {
-      alert(err.message);
+      toastError(err);
     }
   }
+
+  const row: Variants = {
+    hidden: { opacity: 0, y: 6 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: Math.min(i, 14) * 0.03,
+        duration: 0.2,
+        ease: 'easeOut',
+      },
+    }),
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Grupos</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded transition-colors"
-        >
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Grupos</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Organize suas listas de transmissão por nicho
+          </p>
+        </div>
+        <Button onClick={() => setShowForm(!showForm)}>
+          <Plus className="h-4 w-4" />
           Adicionar Grupo
-        </button>
+        </Button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">Novo Grupo</h3>
-          <div className="grid grid-cols-3 gap-3">
-            <input
+        <motion.form
+          initial={reduce ? false : { opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+          onSubmit={handleCreate}
+          className="bg-card border border-border rounded-lg p-4 space-y-3"
+        >
+          <h3 className="text-sm font-semibold text-foreground">Novo Grupo</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Input
               placeholder="External ID"
               required
               value={form.externalId}
               onChange={(e) => setForm({ ...form, externalId: e.target.value })}
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
             />
-            <input
+            <Input
               placeholder="Nome"
               required
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
             />
-            <input
+            <Input
               placeholder="Tags (separadas por vírgula)"
               value={form.nicheTags}
               onChange={(e) => setForm({ ...form, nicheTags: e.target.value })}
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
             />
           </div>
           <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded"
-            >
+            <Button type="submit" disabled={saving}>
               {saving ? 'Salvando...' : 'Criar'}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => setShowForm(false)}
-              className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2"
             >
+              <X className="h-4 w-4" />
               Cancelar
-            </button>
+            </Button>
           </div>
-        </form>
+        </motion.form>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-card border border-border rounded-lg overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <th className="text-left px-4 py-2 font-medium text-gray-600">External ID</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Nome</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Tags</th>
-              <th className="text-center px-4 py-2 font-medium text-gray-600">Ativo</th>
+            <tr className="border-b border-border">
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">External ID</th>
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Nome</th>
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Tags</th>
+              <th className="text-center px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Ativo</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               [...Array(5)].map((_, i) => (
-                <tr key={i} className="border-b border-gray-100">
+                <tr key={i} className="border-b border-border">
                   <td colSpan={4} className="px-4 py-3">
-                    <div className="h-5 bg-gray-100 animate-pulse rounded w-full" />
+                    <div className="h-5 bg-muted animate-pulse rounded w-full" />
                   </td>
                 </tr>
               ))
             ) : (groups as Group[])?.length ? (
-              (groups as Group[]).map((group) => (
-                <tr key={group.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="px-4 py-2 font-mono text-xs text-gray-500">{group.externalId}</td>
-                  <td className="px-4 py-2 font-medium text-gray-800">{group.name}</td>
-                  <td className="px-4 py-2">
-                    <div className="flex gap-1 flex-wrap">
-                      {group.nicheTags.map((tag) => (
-                        <span key={tag} className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
-                          {NICHE_LABELS[tag as NicheTag] || tag}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-4 py-2 text-center">
-                    <button
-                      onClick={() => toggleActive(group)}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        group.active ? 'bg-green-600' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
-                          group.active ? 'translate-x-4.5' : 'translate-x-0.5'
-                        }`}
+              !reduce ? (
+                (groups as Group[]).map((group, i) => (
+                  <motion.tr
+                    key={group.id}
+                    custom={i}
+                    initial="hidden"
+                    animate="visible"
+                    variants={row}
+                    className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors"
+                  >
+                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{group.externalId}</td>
+                    <td className="px-4 py-2.5 font-medium text-foreground">{group.name}</td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex gap-1 flex-wrap">
+                        {group.nicheTags.map((tag) => (
+                          <span key={tag} className="inline-block bg-secondary text-muted-foreground text-xs px-2 py-0.5 rounded-full">
+                            {NICHE_LABELS[tag as NicheTag] || tag}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      <Switch
+                        checked={group.active}
+                        onCheckedChange={() => toggleActive(group)}
+                        aria-label={group.active ? "Desativar grupo" : "Ativar grupo"}
                       />
-                    </button>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                  </motion.tr>
+                ))
+              ) : (
+                (groups as Group[]).map((group) => (
+                  <tr key={group.id} className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors">
+                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{group.externalId}</td>
+                    <td className="px-4 py-2.5 font-medium text-foreground">{group.name}</td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex gap-1 flex-wrap">
+                        {group.nicheTags.map((tag) => (
+                          <span key={tag} className="inline-block bg-secondary text-muted-foreground text-xs px-2 py-0.5 rounded-full">
+                            {NICHE_LABELS[tag as NicheTag] || tag}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      <Switch
+                        checked={group.active}
+                        onCheckedChange={() => toggleActive(group)}
+                        aria-label={group.active ? "Desativar grupo" : "Ativar grupo"}
+                      />
+                    </td>
+                  </tr>
+                ))
+              )
             ) : (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-gray-400">Nenhum grupo encontrado.</td>
+                <td colSpan={4} className="px-4 py-12 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
+                      <Users className="h-5 w-5" />
+                    </span>
+                    <p className="text-sm text-muted-foreground">Nenhum grupo encontrado</p>
+                    <p className="text-xs text-muted-foreground/60">Crie grupos para organizar suas listas de transmissão</p>
+                  </div>
+                </td>
               </tr>
             )}
           </tbody>

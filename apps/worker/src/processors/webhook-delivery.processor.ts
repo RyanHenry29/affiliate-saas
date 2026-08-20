@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Queue, Worker as BmqWorker, Job } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma.service';
+import { createHmac } from 'crypto';
 
 interface WebhookDeliveryJobInput {
   webhookId: string;
@@ -40,7 +41,7 @@ export class WebhookDeliveryProcessor {
     const { webhookId, tenantId, event, payload } = job.data;
     this.logger.log(`Delivering webhook: event=${event} webhook=${webhookId}`);
 
-    const webhook = await this.prisma.webhook.findUnique({
+    const webhook = await this.prisma.webhookEndpoint.findUnique({
       where: { id: webhookId },
     });
 
@@ -49,20 +50,26 @@ export class WebhookDeliveryProcessor {
       return;
     }
 
+    const body = JSON.stringify({
+      event,
+      tenantId,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    });
+
+    const signature = webhook.secret
+      ? createHmac('sha256', webhook.secret).update(body).digest('hex')
+      : '';
+
     try {
       const response = await fetch(webhook.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Webhook-Event': event,
-          'X-Webhook-Secret': webhook.secret,
+          'X-Webhook-Signature': signature,
         },
-        body: JSON.stringify({
-          event,
-          tenantId,
-          data: payload,
-          timestamp: new Date().toISOString(),
-        }),
+        body,
       });
 
       if (!response.ok) {
@@ -70,27 +77,10 @@ export class WebhookDeliveryProcessor {
         throw new Error(`Webhook delivery failed: HTTP ${response.status}: ${text}`);
       }
 
-      await this.prisma.webhookDelivery.create({
-        data: {
-          webhookId,
-          event,
-          status: 'DELIVERED',
-          responseCode: response.status,
-        },
-      });
+      this.logger.log(`Webhook ${webhookId} delivered successfully`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Webhook delivery error: ${message}`);
-
-      await this.prisma.webhookDelivery.create({
-        data: {
-          webhookId,
-          event,
-          status: 'FAILED',
-          error: message,
-        },
-      });
-
       throw error;
     }
   }

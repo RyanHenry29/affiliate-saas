@@ -2,7 +2,6 @@ import { Controller, Get, Post, Delete, Param, Body } from '@nestjs/common';
 import { InvitesService } from './invites.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/types/auth-user.type';
-import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('invites')
 export class InvitesController {
@@ -23,9 +22,8 @@ export class InvitesController {
     return this.invitesService.revoke(user.tenantId, id);
   }
 
-  @Public()
   @Post('accept')
-  accept(@Body('token') token: string, @Body('userId') userId: string) {
-    return this.invitesService.accept(token, userId);
+  accept(@CurrentUser() user: AuthUser, @Body('token') token: string) {
+    return this.invitesService.accept(token, user.id);
   }
 }

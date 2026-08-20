@@ -39,7 +39,6 @@ export class BillingSyncProcessor {
 
     const subscription = await this.prisma.subscription.findFirst({
       where: { tenantId },
-      orderBy: { createdAt: 'desc' },
     });
 
     if (!subscription) {
@@ -50,20 +49,16 @@ export class BillingSyncProcessor {
     const dispatchCount = await this.prisma.dispatchJob.count({
       where: {
         tenantId,
-        createdAt: { gte: subscription.currentPeriodStart },
+        createdAt: { gte: subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd.getTime() - 30 * 24 * 60 * 60 * 1000) : new Date(0) },
       },
     });
 
-    const plan = await this.prisma.plan.findUnique({
-      where: { id: subscription.planId },
+    const planConfig = await this.prisma.planConfig.findUnique({
+      where: { tier: subscription.plan },
     });
 
-    if (plan && dispatchCount >= plan.dispatchLimit) {
-      this.logger.warn(`Tenant ${tenantId} reached dispatch limit: ${dispatchCount}/${plan.dispatchLimit}`);
-      await this.prisma.subscription.update({
-        where: { id: subscription.id },
-        data: { status: 'OVER_LIMIT' },
-      });
+    if (planConfig && planConfig.dispatchesLimit > 0 && dispatchCount >= planConfig.dispatchesLimit) {
+      this.logger.warn(`Tenant ${tenantId} reached dispatch limit: ${dispatchCount}/${planConfig.dispatchesLimit}`);
     }
   }
 }

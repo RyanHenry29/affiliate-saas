@@ -32,8 +32,12 @@ Thumbs.db
 .cache/
 .eslintcache
 
-# Tools (binaries, DB data, Redis)
+# Backup / recovery folders
+recovery-*/
 tools/
 
-# Prisma migrations history
-apps/api/prisma/migrations/
+# Vercel
+.vercel/
+
+.vercel
+.env*

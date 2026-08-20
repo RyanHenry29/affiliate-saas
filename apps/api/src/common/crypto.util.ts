@@ -1,5 +1,23 @@
 import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'node:crypto';
 
+export interface ConfigLike {
+  get: (key: string, defaultValue?: string) => string | undefined;
+}
+
+/**
+ * Resolve a chave de criptografia de secrets. Em produção, ENCRYPTION_KEY é
+ * obrigatório: um fallback conhecido tornaria a criptografia inútil (qualquer um
+ * poderia descriptografar credenciais armazenadas).
+ */
+export function resolveEncryptionKey(config: ConfigLike): string {
+  const key = config.get('ENCRYPTION_KEY');
+  if (key) return key;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('ENCRYPTION_KEY é obrigatório em produção');
+  }
+  return 'dev-encryption-key-change-in-production';
+}
+
 export function encryptSecret(plaintext: string, key: string): string {
   const keyHash = createHash('sha256').update(key).digest();
   const iv = randomBytes(12);

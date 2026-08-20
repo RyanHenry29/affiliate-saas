@@ -12,7 +12,7 @@ export class QueuesService {
     @InjectQueue('payment-confirm') private paymentConfirmQueue: Queue,
   ) {}
 
-  async enqueueDispatch(data: { tenantId: string; offerId: string; groupId: string }) {
+  async enqueueDispatch(data: { dispatchJobId: string; tenantId: string; offerId: string; groupId: string }) {
     return this.dispatchQueue.add('dispatch', data, { attempts: 3, backoff: { type: 'exponential', delay: 5000 } });
   }
 

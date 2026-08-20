@@ -7,6 +7,7 @@ import { DispatchProcessor } from './processors/dispatch.processor';
 import { OfferMiningProcessor } from './processors/offer-mining.processor';
 import { BillingSyncProcessor } from './processors/billing-sync.processor';
 import { WebhookDeliveryProcessor } from './processors/webhook-delivery.processor';
+import { PaymentConfirmProcessor } from './processors/payment-confirm.processor';
 import { ShopeeService } from './processors/shopee.service';
 import { AliexpressService } from './processors/aliexpress.service';
 import { AmazonService } from './processors/amazon.service';
@@ -26,6 +27,7 @@ import { AwinService } from './processors/awin.service';
     OfferMiningProcessor,
     BillingSyncProcessor,
     WebhookDeliveryProcessor,
+    PaymentConfirmProcessor,
     ShopeeService,
     AliexpressService,
     AmazonService,

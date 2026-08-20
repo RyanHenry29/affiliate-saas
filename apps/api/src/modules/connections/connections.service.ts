@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { encryptSecret, decryptSecret } from '../../common/crypto.util';
+import { encryptSecret, decryptSecret, resolveEncryptionKey } from '../../common/crypto.util';
 import { UpsertCredentialDto } from './dto/upsert-credential.dto';
 
 const MARKETPLACE_CATALOG = [
@@ -23,26 +23,33 @@ export class ConnectionsService {
     private prisma: PrismaService,
     private config: ConfigService,
   ) {
-    this.encryptionKey = this.config.get<string>('ENCRYPTION_KEY', 'dev-encryption-key-change-in-production');
+    this.encryptionKey = resolveEncryptionKey(this.config);
   }
 
   catalog() {
     return MARKETPLACE_CATALOG;
   }
 
-  async list(tenantId: string) {
-    return this.prisma.connection.findMany({
-      where: { tenantId },
-      select: {
-        id: true,
-        marketplace: true,
-        label: true,
-        isActive: true,
-        lastSyncAt: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async list(tenantId: string, page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.prisma.connection.findMany({
+        where: { tenantId },
+        select: {
+          id: true,
+          marketplace: true,
+          label: true,
+          isActive: true,
+          lastSyncAt: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.connection.count({ where: { tenantId } }),
+    ]);
+    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async upsert(tenantId: string, dto: UpsertCredentialDto) {

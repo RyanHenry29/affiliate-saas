@@ -41,6 +41,7 @@ export class MessagingService {
     return this.prisma.messagingInstance.create({
       data: {
         name,
+        provider: 'whatsapp',
         instanceId: data.instance?.instanceId || '',
         tenantId,
         status: 'CREATED',
