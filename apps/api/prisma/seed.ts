@@ -94,7 +94,23 @@ async function main() {
 
     console.log(`Admin master criado: tenant=${tenant.id} email=${masterEmail}`);
   } else {
-    console.log(`Admin master já existe: tenant=${existing.id}`);
+    const masterUser = await prisma.user.findFirst({
+      where: { tenantId: existing.id, role: 'ADMIN_MASTER' },
+    });
+    if (masterUser && masterUser.email !== masterEmail) {
+      const clash = await prisma.user.findUnique({ where: { email: masterEmail } });
+      if (!clash) {
+        await prisma.user.update({
+          where: { id: masterUser.id },
+          data: { email: masterEmail },
+        });
+        console.log(`Admin master email reconciliado para: ${masterEmail}`);
+      } else {
+        console.log(`Admin master já existe com email ${masterEmail}`);
+      }
+    } else {
+      console.log(`Admin master já existe: tenant=${existing.id}`);
+    }
   }
 
   for (const plan of DEFAULT_PLANS) {
