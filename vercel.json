@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm install -g pnpm@9.12.0 && pnpm --filter web install --prod=false",
+  "installCommand": "npm install -g pnpm@9.12.0 && pnpm install --prod=false",
   "buildCommand": "pnpm --filter web build",
   "outputDirectory": "apps/web/.next",
   "framework": "nextjs"
