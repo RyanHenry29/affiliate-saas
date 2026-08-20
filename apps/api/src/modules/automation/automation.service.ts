@@ -8,7 +8,10 @@ export class AutomationService implements OnModuleInit {
   constructor(private prisma: PrismaService) {}
 
   async onModuleInit() {
-    await this.seed();
+    // Non-blocking: seed defaults without stalling startup if the DB is briefly unavailable.
+    this.seed().catch(() => {
+      /* best-effort seed; will populate on next boot */
+    });
   }
 
   private async seed() {
