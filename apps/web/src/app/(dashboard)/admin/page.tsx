@@ -6,14 +6,18 @@ import {
   Building2,
   CreditCard,
   Flag,
+  KeyRound,
   LayoutDashboard,
   Lock,
   MailCheck,
   Pencil,
   QrCode,
+  ScrollText,
+  Activity,
   Tag,
   Trash2,
   UserCog,
+  Webhook,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import type {
@@ -41,7 +45,11 @@ type AdminTab =
   | 'plans'
   | 'payment'
   | 'invites'
-  | 'flags';
+  | 'flags'
+  | 'apikeys'
+  | 'webhooks'
+  | 'audit'
+  | 'monitoring';
 
 const TABS: { key: AdminTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { key: 'overview', label: 'Visão geral', icon: LayoutDashboard },
@@ -51,6 +59,10 @@ const TABS: { key: AdminTab; label: string; icon: React.ComponentType<{ classNam
   { key: 'payment', label: 'Pagamento (PIX)', icon: QrCode },
   { key: 'invites', label: 'Convites', icon: MailCheck },
   { key: 'flags', label: 'Flags', icon: Flag },
+  { key: 'apikeys', label: 'API Keys', icon: KeyRound },
+  { key: 'webhooks', label: 'Webhooks', icon: Webhook },
+  { key: 'audit', label: 'Auditoria', icon: ScrollText },
+  { key: 'monitoring', label: 'Monitoramento', icon: Activity },
 ];
 
 const PLAN_TIERS: PlanTier[] = ['STARTER', 'PRO', 'AGENCY'];
@@ -93,6 +105,11 @@ export default function AdminPage() {
   const { data: paymentConfig, mutate: mutatePayment } = useSWR('/admin/payment-config', fetcher);
   const { data: invites, mutate: mutateInvites } = useSWR('/admin/invites', fetcher);
   const { data: flags, mutate: mutateFlags } = useSWR('/admin/feature-flags', fetcher);
+  const { data: apiKeys, mutate: mutateKeys } = useSWR('/api-keys', fetcher);
+  const { data: webhooks, mutate: mutateWebhooks } = useSWR('/webhooks', fetcher);
+  const { data: audit, mutate: mutateAudit } = useSWR('/audit', fetcher);
+  const { data: queue } = useSWR('/monitoring/queue', fetcher);
+  const { data: monitorErrors } = useSWR('/monitoring/errors', fetcher);
 
   const [showCreateTenant, setShowCreateTenant] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
@@ -497,6 +514,46 @@ export default function AdminPage() {
         </div>
       )}
 
+      {tab === 'apikeys' && (
+        <ApiKeysPanel
+          keys={(apiKeys as any[]) ?? []}
+          saving={saving}
+          onCreate={async (name) => {
+            await api.apiKeys.create({ name });
+            mutateKeys();
+          }}
+          onRevoke={async (id) => {
+            await api.apiKeys.revoke(id);
+            mutateKeys();
+          }}
+        />
+      )}
+
+      {tab === 'webhooks' && (
+        <WebhooksPanel
+          webhooks={(webhooks as any[]) ?? []}
+          saving={saving}
+          onCreate={async (url, events) => {
+            await api.webhooks.create({ url, events });
+            mutateWebhooks();
+          }}
+          onUpdate={async (id, data) => {
+            await api.webhooks.update(id, data);
+            mutateWebhooks();
+          }}
+          onDelete={async (id) => {
+            await api.webhooks.delete(id);
+            mutateWebhooks();
+          }}
+        />
+      )}
+
+      {tab === 'audit' && <AuditPanel rows={(audit as any[]) ?? []} />}
+
+      {tab === 'monitoring' && (
+        <MonitoringPanel queue={queue as any} errors={(monitorErrors as any[]) ?? []} />
+      )}
+
       {showCreateTenant && (
         <CreateTenantDialog
           onClose={() => setShowCreateTenant(false)}
@@ -809,6 +866,284 @@ function TenantSubscriptionDialog({
           >
             Salvar
           </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ApiKeysPanel({
+  keys,
+  saving,
+  onCreate,
+  onRevoke,
+}: {
+  keys: any[];
+  saving: boolean;
+  onCreate: (name: string) => Promise<void>;
+  onRevoke: (id: string) => Promise<void>;
+}) {
+  const [name, setName] = useState('');
+  const act = async (fn: () => Promise<void>, msg: string) => {
+    try {
+      await fn();
+      toastSuccess(msg);
+    } catch (e: any) {
+      toastError(e);
+    }
+  };
+  return (
+    <div className="space-y-4">
+      <div className="surface-card p-4 flex flex-wrap items-end gap-3">
+        <div className="flex-1 min-w-[220px]">
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+            Nome da chave
+          </label>
+          <input
+            className={inputCls}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Ex.: Integração interna"
+          />
+        </div>
+        <Button
+          disabled={saving || !name.trim()}
+          onClick={() => act(async () => { await onCreate(name.trim()); setName(''); }, 'API Key criada')}
+        >
+          Criar chave
+        </Button>
+      </div>
+      <div className="surface-card overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Nome</th>
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Prefixo</th>
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Criada em</th>
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Último uso</th>
+              <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {keys.map((k) => (
+              <tr key={k.id} className="border-b border-border last:border-0 hover:bg-secondary/50">
+                <td className="px-4 py-2.5 text-foreground">{k.name}</td>
+                <td className="px-4 py-2.5 font-mono text-muted-foreground">{k.prefix}</td>
+                <td className="px-4 py-2.5 text-muted-foreground text-xs font-mono">
+                  {k.createdAt ? new Date(k.createdAt).toLocaleString('pt-BR') : '—'}
+                </td>
+                <td className="px-4 py-2.5 text-muted-foreground text-xs font-mono">
+                  {k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString('pt-BR') : 'nunca'}
+                </td>
+                <td className="px-4 py-2.5 text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Revogar ${k.name}`}
+                    disabled={saving}
+                    onClick={() => act(async () => { await onRevoke(k.id); }, 'API Key revogada')}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+            {!keys.length && (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  Nenhuma API key cadastrada.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function WebhooksPanel({
+  webhooks,
+  saving,
+  onCreate,
+  onUpdate,
+  onDelete,
+}: {
+  webhooks: any[];
+  saving: boolean;
+  onCreate: (url: string, events: string[]) => Promise<void>;
+  onUpdate: (id: string, data: Record<string, unknown>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const [url, setUrl] = useState('');
+  const [events, setEvents] = useState('');
+  const act = async (fn: () => Promise<void>, msg: string) => {
+    try {
+      await fn();
+      toastSuccess(msg);
+    } catch (e: any) {
+      toastError(e);
+    }
+  };
+  return (
+    <div className="space-y-4">
+      <div className="surface-card p-4 flex flex-wrap items-end gap-3">
+        <div className="flex-1 min-w-[240px]">
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">URL do webhook</label>
+          <input
+            className={inputCls}
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://exemplo.com/webhook"
+          />
+        </div>
+        <div className="flex-1 min-w-[200px]">
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Eventos (vírgula)</label>
+          <input
+            className={inputCls}
+            value={events}
+            onChange={(e) => setEvents(e.target.value)}
+            placeholder="offer.published, dispatch.sent"
+          />
+        </div>
+        <Button
+          disabled={saving || !url.trim()}
+          onClick={() =>
+            act(async () => {
+              await onCreate(
+                url.trim(),
+                events.split(',').map((s) => s.trim()).filter(Boolean),
+              );
+              setUrl('');
+              setEvents('');
+            }, 'Webhook criado')
+          }
+        >
+          Criar webhook
+        </Button>
+      </div>
+      <div className="surface-card overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">URL</th>
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Eventos</th>
+              <th className="text-center px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Ativo</th>
+              <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {webhooks.map((w) => (
+              <tr key={w.id} className="border-b border-border last:border-0 hover:bg-secondary/50">
+                <td className="px-4 py-2.5 text-foreground break-all">{w.url}</td>
+                <td className="px-4 py-2.5 text-muted-foreground text-xs">{(w.events ?? []).join(', ')}</td>
+                <td className="px-4 py-2.5 text-center">
+                  <Switch
+                    checked={!!w.isActive}
+                    disabled={saving}
+                    onCheckedChange={(v) =>
+                      act(async () => { await onUpdate(w.id, { isActive: v }); }, 'Webhook atualizado')
+                    }
+                    aria-label={`Ativar ${w.url}`}
+                  />
+                </td>
+                <td className="px-4 py-2.5 text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Excluir ${w.url}`}
+                    disabled={saving}
+                    onClick={() => act(async () => { await onDelete(w.id); }, 'Webhook excluído')}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+            {!webhooks.length && (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  Nenhum webhook cadastrado.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function AuditPanel({ rows }: { rows: any[] }) {
+  return (
+    <div className="surface-card overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border">
+            <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Data</th>
+            <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Ação</th>
+            <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Entidade</th>
+            <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">ID</th>
+            <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Detalhes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={r.id ?? i} className="border-b border-border last:border-0 hover:bg-secondary/50">
+              <td className="px-4 py-2.5 text-muted-foreground text-xs font-mono whitespace-nowrap">
+                {r.createdAt ? new Date(r.createdAt).toLocaleString('pt-BR') : '—'}
+              </td>
+              <td className="px-4 py-2.5 text-foreground">{r.action}</td>
+              <td className="px-4 py-2.5 text-muted-foreground">
+                {r.entity}
+                {r.tenantId ? ` · ${r.tenantId}` : ''}
+              </td>
+              <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{r.entityId ?? '—'}</td>
+              <td className="px-4 py-2.5 text-xs text-muted-foreground max-w-xs truncate">
+                {r.details ? JSON.stringify(r.details) : '—'}
+              </td>
+            </tr>
+          ))}
+          {!rows.length && (
+            <tr>
+              <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Nenhum registro de auditoria.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function MonitoringPanel({ queue, errors }: { queue: any; errors: any[] }) {
+  const q = queue ?? {};
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MetricCard label="Na fila" value={q.waiting ?? 0} icon={<Activity className="h-5 w-5" />} />
+        <MetricCard label="Ativos" value={q.active ?? 0} icon={<Activity className="h-5 w-5" />} />
+        <MetricCard label="Concluídos" value={q.completed ?? 0} icon={<Activity className="h-5 w-5" />} />
+        <MetricCard label="Falhados" value={q.failed ?? 0} icon={<Activity className="h-5 w-5" />} />
+      </div>
+      <div className="surface-card overflow-x-auto">
+        <div className="px-4 py-3 border-b border-border">
+          <h2 className="text-sm font-semibold text-foreground">Erros recentes</h2>
+        </div>
+        <div className="divide-y divide-border">
+          {(errors ?? []).map((e, i) => (
+            <div key={e.id ?? i} className="px-4 py-3 text-sm">
+              <p className="text-foreground">{e.message ?? e.error ?? 'Erro'}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                {e.createdAt ? new Date(e.createdAt).toLocaleString('pt-BR') : ''}{' '}
+                {e.context ? JSON.stringify(e.context) : ''}
+              </p>
+            </div>
+          ))}
+          {!(errors ?? []).length && (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhum erro registrado.</p>
+          )}
         </div>
       </div>
     </div>

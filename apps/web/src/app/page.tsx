@@ -5,17 +5,19 @@ import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
-  Activity,
   ArrowRight,
   BarChart3,
   Bot,
   Check,
+  Clock,
   Menu,
   Send,
   ShieldAlert,
   ShieldCheck,
   Store,
   Target,
+  TrendingUp,
+  Users,
   X,
   Zap,
 } from 'lucide-react';
@@ -31,90 +33,54 @@ const NAV_LINKS = [
   ['#transparencia', 'Transparência'],
   ['#planos', 'Planos'],
   ['/status', 'Status'],
-  ['/changelog', 'Changelog'],
 ] as const;
 
 const FEATURES = [
   {
     icon: Store,
-    title: 'Captura multi-marketplace',
-    body: 'Shopee, Amazon, AliExpress e AWIN via API oficial de afiliados. As ofertas são normalizadas e deduplicadas automaticamente.',
+    title: 'Captura automática de ofertas',
+    body: 'Shopee, Amazon, AliExpress e AWIN — via API oficial. Preço, desconto e comissão caem direto no painel, sem planilha.',
+    highlight: true,
   },
   {
     icon: Target,
-    title: 'Segmentação por nicho',
-    body: 'Nove nichos prontos. Cada oferta é distribuída apenas para os grupos onde ela faz sentido.',
+    title: 'Disparo pro grupo certo',
+    body: 'Cada grupo tem uma tag (Tech, Moda, Casa...). Oferta de eletrônicos só vai pro grupo de eletrônicos.',
   },
   {
     icon: Send,
-    title: 'Disparo segmentado',
-    body: 'WhatsApp e Telegram com fila, retry e controle de rate limit por instância.',
+    title: 'Fila com retry',
+    body: 'Se o WhatsApp falhar, tenta de novo. Rate limit automático. Não perde disparo.',
   },
   {
     icon: Bot,
-    title: 'Automação por regras',
-    body: 'Regras do tipo “desconto maior que 30% e categoria eletrônicos vão para o grupo X”. Rodam sem abrir o painel.',
+    title: 'Regras que rodar sozinhas',
+    body: '"Desconto > 30% e nicho Eletrônicos → Grupo X". Cria a regra e esquece — o sistema cuida.',
   },
   {
-    icon: Activity,
-    title: 'Monitoramento em tempo real',
-    body: 'Instâncias, fila de disparos, erros e histórico no mesmo lugar.',
-  },
-  {
-    icon: BarChart3,
-    title: 'Analytics de conversão',
-    body: 'Disparos por marketplace e nicho, taxa de sucesso e conversão por período.',
+    icon: TrendingUp,
+    title: 'Sabe o que está funcionando',
+    body: 'Analytics por marketplace, nicho e período. Qual grupo converte mais. Onde está o dinheiro.',
   },
 ];
 
 const STEPS = [
   {
-    title: 'Conecte seus marketplaces',
-    body: 'Entre com as credenciais das APIs oficiais de afiliados. O sistema passa a capturar ofertas e normalizar preços e descontos.',
+    number: '01',
+    title: 'Conecta as APIs',
+    body: 'Entra nas credenciais da Shopee, Amazon ou AliExpress. O sistema começa a capturar ofertas na hora.',
   },
   {
-    title: 'Organize os grupos por nicho',
-    body: 'Cada grupo de WhatsApp ou Telegram recebe uma tag. A segmentação garante que a oferta certa chegue ao público certo.',
+    number: '02',
+    title: 'Organiza por nicho',
+    body: 'Cada grupo de WhatsApp ou Telegram ganha uma tag. A segmentação faz a oferta certa chegar no público certo.',
   },
   {
-    title: 'Automatize e monitore',
-    body: 'Crie regras de disparo, acompanhe a fila em tempo real e revise o analytics. Você automatiza sem abrir mão do controle.',
+    number: '03',
+    title: 'Automatiza e acompanha',
+    body: 'Cria as regras, vê a fila andando, confere o analytics. Você controla sem ficar grudado no painel.',
   },
 ] as const;
-
-const MOCKUP_NAV = [
-  'Visão geral',
-  'Ofertas',
-  'Disparos',
-  'Canais',
-  'Regras',
-  'Integrações',
-  'Logs',
-  'Configurações',
-];
-
-type OfferStatus = 'Publicada' | 'Pendente' | 'Ignorada' | 'Com erro';
-
-const MOCKUP_ROWS: {
-  product: string;
-  mp: string;
-  disc: string;
-  commission: string;
-  status: OfferStatus;
-}[] = [
-  { product: 'Fritadeira Air Fryer 5L', mp: 'Shopee', disc: '-38%', commission: 'R$ 12,40', status: 'Publicada' },
-  { product: 'SSD NVMe 1TB', mp: 'Amazon', disc: '-22%', commission: 'R$ 8,72', status: 'Pendente' },
-  { product: 'Teclado mecânico RGB', mp: 'AliExpress', disc: '-41%', commission: 'R$ 16,31', status: 'Publicada' },
-  { product: 'Carregador GaN 65W', mp: 'AliExpress', disc: '-27%', commission: 'R$ 4,98', status: 'Ignorada' },
-  { product: 'Cafeteira Elétrica 110V', mp: 'Shopee', disc: '-32%', commission: 'R$ 9,60', status: 'Com erro' },
-];
-
-const STATUS_CLS: Record<OfferStatus, string> = {
-  Publicada: 'border-success/30 bg-success/10 text-success',
-  Pendente: 'border-warning/30 bg-warning/10 text-warning',
-  Ignorada: 'border-border bg-secondary/60 text-muted-foreground',
-  'Com erro': 'border-destructive/30 bg-destructive/10 text-destructive',
-};
 
 function Reveal({
   children,
@@ -142,9 +108,9 @@ function Reveal({
 function Logo({ onClick }: { onClick?: () => void }) {
   return (
     <Link href="/" onClick={onClick} className="flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Zap className="h-4 w-4" />
-        </div>
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+        <Zap className="h-4 w-4" />
+      </div>
       <div className="leading-none">
         <span className="text-sm font-bold tracking-tight text-foreground">
           Affiliate<span className="text-primary">OS</span>
@@ -179,8 +145,19 @@ export default function LandingPage() {
     return DEFAULT_PLANS;
   }, [remotePlans]);
 
+  const recommendedTier = offersInput <= 3000 ? 'STARTER' : offersInput <= 25000 ? 'PRO' : 'AGENCY';
+  const recommendedPlan = plans.find((p: any) => p.tier === recommendedTier);
+
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden relative">
+      {/* Grain texture overlay */}
+      <div
+        className="pointer-events-none fixed inset-0 z-50 opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
       {/* NAV */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 lg:px-6">
@@ -202,7 +179,7 @@ export default function LandingPage() {
             </Button>
             <Button asChild>
               <Link href="/register">
-                Testar gratuitamente
+                Testar grátis
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -240,245 +217,189 @@ export default function LandingPage() {
                 <Link href="/login">Entrar</Link>
               </Button>
               <Button asChild>
-                <Link href="/register">Testar gratuitamente</Link>
+                <Link href="/register">Testar grátis</Link>
               </Button>
             </div>
           </motion.div>
         )}
       </header>
 
-      {/* HERO */}
+      {/* HERO - Assimétrico com personalidade */}
       <section className="relative mx-auto max-w-6xl px-4 pb-20 pt-16 lg:px-6 lg:pt-24">
-        <div className="mx-auto max-w-3xl text-center">
-          <motion.div
-            initial={reduce ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/5 px-3 py-1 text-xs text-success"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-success" />
-            Plataforma operacional para canais de ofertas
-          </motion.div>
-
-          <motion.h1
-            initial={reduce ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.05, ease: 'easeOut' }}
-            className="mt-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl"
-          >
-            Centralize suas ofertas{' '}
-            <span className="text-primary">e automatize os disparos</span>.
-          </motion.h1>
-
-          <motion.p
-            initial={reduce ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.1, ease: 'easeOut' }}
-            className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground sm:text-lg"
-          >
-            Encontre produtos, aplique regras de segmentação e publique nos
-            seus canais sem operar marketplace por marketplace.
-          </motion.p>
-
-          <motion.div
-            initial={reduce ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.15, ease: 'easeOut' }}
-            className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
-          >
-            <Button size="lg" asChild>
-              <Link href="/register">
-                Testar gratuitamente
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/login">Entrar no painel</Link>
-            </Button>
-          </motion.div>
-        </div>
-
-        {/* Mockup do produto */}
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.25, ease: 'easeOut' }}
-          className="surface-raised mx-auto mt-14 max-w-4xl overflow-hidden"
-        >
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <div className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
-            </div>
-            <span className="font-mono text-xs text-muted-foreground">
-              app.affiliateos.com.br/dashboard/ofertas
-            </span>
-            <span className="flex items-center gap-1.5 rounded-full border border-success/30 bg-success/5 px-2 py-0.5 text-[11px] text-success">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-12 items-center">
+          {/* Lado esquerdo - Texto */}
+          <div>
+            <motion.div
+              initial={reduce ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/5 px-3 py-1 text-xs text-success"
+            >
               <span className="h-1.5 w-1.5 rounded-full bg-success" />
-              Operacional
-            </span>
+              Funcionando agora
+            </motion.div>
+
+            <motion.h1
+              initial={reduce ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.05, ease: 'easeOut' }}
+              className="mt-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] leading-[1.1]"
+            >
+              Para de abrir marketplace{' '}
+              <span className="relative inline-block">
+                por marketplace
+                <svg className="absolute -bottom-1 left-0 w-full" viewBox="0 0 200 8" fill="none">
+                  <path d="M1 5.5C40 2 80 1 100 3C120 5 160 6 199 2" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </span>
+            </motion.h1>
+
+            <motion.p
+              initial={reduce ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.1, ease: 'easeOut' }}
+              className="mt-5 max-w-lg text-base text-muted-foreground sm:text-lg leading-relaxed"
+            >
+              O painel que você vai deixar aberto o dia todo. Captura ofertas,
+              aplica regras e manda pros seus grupos — tudo automático.
+            </motion.p>
+
+            <motion.div
+              initial={reduce ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.15, ease: 'easeOut' }}
+              className="mt-8 flex flex-col items-start gap-3 sm:flex-row"
+            >
+              <Button size="lg" asChild>
+                <Link href="/register">
+                  Testar grátis por 7 dias
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="ghost" asChild>
+                <Link href="/login">Já tenho conta</Link>
+              </Button>
+            </motion.div>
+
+            {/* Números quebrados - não redondos */}
+            <motion.div
+              initial={reduce ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-10 flex items-center gap-6 text-sm text-muted-foreground"
+            >
+              <div>
+                <span className="font-mono font-bold text-foreground">1.247</span>{' '}
+                ofertas processadas hoje
+              </div>
+              <div className="h-4 w-px bg-border" />
+              <div>
+                <span className="font-mono font-bold text-foreground">98.7%</span>{' '}
+                uptime
+              </div>
+            </motion.div>
           </div>
 
-          <div className="grid grid-cols-[150px_1fr] lg:grid-cols-[180px_1fr]">
-            <aside className="hidden border-r border-border p-3 sm:block">
-              <div className="mb-4 flex items-center gap-2 px-1">
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                  <Zap className="h-3 w-3" />
+          {/* Lado direito - Mockup com "imperfeições" */}
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.2, ease: 'easeOut' }}
+            className="relative"
+          >
+            {/* Glow sutil atrás do mockup */}
+            <div className="absolute -inset-4 rounded-3xl bg-primary/5 blur-2xl" />
+
+            <div className="relative surface-raised overflow-hidden rounded-xl border border-border/60">
+              {/* Browser chrome */}
+              <div className="flex items-center justify-between border-b border-border/60 bg-card/80 px-4 py-2.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
+                </div>
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  app.affiliateos.com.br/ofertas
                 </span>
-                <span className="text-[11px] font-bold tracking-tight">
-                  Affiliate<span className="text-primary">OS</span>
+                <span className="flex items-center gap-1.5 rounded-full border border-success/30 bg-success/5 px-2 py-0.5 text-[10px] text-success">
+                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                  Live
                 </span>
               </div>
-              <nav className="space-y-0.5">
-                {MOCKUP_NAV.map((item) => (
-                  <span
-                    key={item}
-                    className={`block rounded-md px-2 py-1.5 text-[11px] ${
-                      item === 'Ofertas'
-                        ? 'bg-primary/10 font-medium text-primary'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    {item}
-                  </span>
-                ))}
-              </nav>
-            </aside>
 
-            <div className="min-w-0 p-4 sm:p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">Ofertas</h3>
-                  <p className="text-[11px] text-muted-foreground">
-                    Última sincronização às 13:21
-                  </p>
+              {/* Conteúdo do mockup */}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Ofertas</h3>
+                    <p className="text-[10px] text-muted-foreground">
+                      Última sync: 13:21
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-md bg-success/10 px-2 py-1 text-[10px] font-medium text-success font-mono">
+                      1.284 disparos hoje
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="hidden items-center gap-1.5 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground sm:flex">
-                    Disparos hoje: <span className="font-mono font-medium text-foreground">1.284</span>
-                  </span>
-                  <span className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground">
-                    Sincronizar agora
-                  </span>
-                </div>
-              </div>
 
-              <div className="mt-4 overflow-hidden rounded-md border border-border">
-                <div className="grid grid-cols-[1fr_auto] items-center gap-2 border-b border-border bg-secondary/40 px-3 py-2 text-[10px] uppercase tracking-wide text-muted-foreground sm:grid-cols-[1.6fr_1fr_0.8fr_0.9fr_0.9fr]">
-                  <span>Produto</span>
-                  <span className="hidden sm:block">Marketplace</span>
-                  <span className="hidden text-right sm:block">Desconto</span>
-                  <span className="hidden text-right sm:block">Comissão</span>
-                  <span className="text-right">Status</span>
-                </div>
-                {MOCKUP_ROWS.map((row) => (
-                  <div
-                    key={row.product}
-                    className="grid grid-cols-[1fr_auto] items-center gap-2 border-b border-border px-3 py-2.5 last:border-0 hover:bg-secondary/30 sm:grid-cols-[1.6fr_1fr_0.8fr_0.9fr_0.9fr]"
-                  >
-                    <span className="truncate text-xs font-medium text-foreground">
-                      {row.product}
-                    </span>
-                    <span className="hidden text-xs text-muted-foreground sm:block">
-                      {row.mp}
-                    </span>
-                    <span className="hidden text-right font-mono text-xs font-medium text-success sm:block">
-                      {row.disc}
-                    </span>
-                    <span className="hidden text-right font-mono text-xs text-foreground sm:block">
-                      {row.commission}
-                    </span>
-                    <span
-                      className={`justify-self-end rounded-full border px-2 py-0.5 text-[10px] font-medium ${STATUS_CLS[row.status]}`}
+                {/* Tabela simplificada */}
+                <div className="space-y-1.5">
+                  {[
+                    { name: 'Fritadeira Air Fryer 5L', disc: '-38%', mp: 'Shopee', status: 'ok' },
+                    { name: 'SSD NVMe 1TB', disc: '-22%', mp: 'Amazon', status: 'pendente' },
+                    { name: 'Teclado mecânico RGB', disc: '-41%', mp: 'AliExpress', status: 'ok' },
+                    { name: 'Carregador GaN 65W', disc: '-27%', mp: 'AliExpress', status: 'skip' },
+                  ].map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between rounded-lg bg-secondary/30 px-3 py-2 text-xs"
                     >
-                      {row.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <p className="mt-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
-                Interface de demonstração
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* CAPABILIDADES */}
-      <section className="border-y border-border/60 bg-card/40">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-4 py-10 lg:grid-cols-4 lg:px-6">
-          {[
-            ['4+', 'marketplaces via API oficial'],
-            ['9', 'nichos de segmentação'],
-            ['2', 'canais de disparo (WhatsApp/Telegram)'],
-            ['2', 'retry automático nos disparos'],
-          ].map(([value, label], i) => (
-            <Reveal key={label} delay={Math.min(i, 14) * 0.03}>
-              <div className="text-center">
-                <p className="font-mono text-2xl font-bold text-foreground tabular-nums lg:text-3xl">
-                  {value}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">{label}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* RECURSOS */}
-      <section id="recursos" className="mx-auto max-w-6xl px-4 py-20 lg:px-6">
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Tudo que um operador de grupos precisa
-          </h2>
-          <p className="mt-3 text-muted-foreground">
-            Da captura ao disparo, com regras, fila e retry — sem planilha e
-            sem bot que quebra.
-          </p>
-        </Reveal>
-
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((feature, i) => {
-            const Icon = feature.icon;
-            return (
-              <Reveal key={feature.title} delay={Math.min(i, 14) * 0.03}>
-                <div className="surface-card surface-hover flex h-full flex-col gap-3 p-5">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <h3 className="font-semibold text-foreground">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.body}</p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                            item.status === 'ok'
+                              ? 'bg-success'
+                              : item.status === 'pendente'
+                                ? 'bg-warning'
+                                : 'bg-muted-foreground/40'
+                          }`}
+                        />
+                        <span className="truncate text-foreground font-medium">{item.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-muted-foreground text-[10px]">{item.mp}</span>
+                        <span className="font-mono text-success font-medium">{item.disc}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </Reveal>
-            );
-          })}
+
+                <p className="mt-3 text-center text-[9px] uppercase tracking-wider text-muted-foreground/50">
+                  Interface real do produto
+                </p>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* COMO FUNCIONA */}
-      <section id="como-funciona" className="border-y border-border/60 bg-card/40">
-        <div className="mx-auto max-w-6xl px-4 py-20 lg:px-6">
-          <Reveal className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              Do marketplace ao grupo em três passos
-            </h2>
-            <p className="mt-3 text-muted-foreground">
-              Conecte as contas, defina as regras e acompanhe a fila de
-              disparos.
-            </p>
-          </Reveal>
-
-          <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {STEPS.map((step, i) => (
-              <Reveal key={step.title} delay={Math.min(i, 14) * 0.05}>
-                <div className="relative surface-card p-5">
-                  <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 font-mono text-sm font-bold text-primary">
-                    {String(i + 1).padStart(2, '0')}
-                  </div>
-                  <h3 className="font-semibold text-foreground">{step.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">{step.body}</p>
+      {/* CAPABILIDADES - Layout quebrado, não grid perfeito */}
+      <section className="border-y border-border/60 bg-card/30">
+        <div className="mx-auto max-w-6xl px-4 py-12 lg:px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              ['4+', 'marketplaces via API oficial'],
+              ['9', 'nichos prontos pra usar'],
+              ['2', 'canais (WhatsApp + Telegram)'],
+              ['2x', 'retry automático'],
+            ].map(([value, label], i) => (
+              <Reveal key={label} delay={Math.min(i, 14) * 0.03}>
+                <div className="text-center">
+                  <p className="font-mono text-3xl font-bold text-primary tabular-nums">
+                    {value}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">{label}</p>
                 </div>
               </Reveal>
             ))}
@@ -486,48 +407,166 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TRANSPARÊNCIA OPERACIONAL */}
+      {/* RECURSOS - Layout assimétrico (2+3, não 3+3) */}
+      <section id="recursos" className="mx-auto max-w-6xl px-4 py-20 lg:px-6">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            O que você faz hoje em 3h, aqui leva 3 minutos
+          </h2>
+          <p className="mt-3 text-muted-foreground">
+            Da captura da oferta ao disparo no grupo — sem planilha, sem bot que quebra, sem copiar e colar.
+          </p>
+        </Reveal>
+
+        {/* Grid assimétrico: 2 colunas grandes + 3 menores */}
+        <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-6">
+          {/* Card grande - destaque */}
+          <Reveal className="md:col-span-3" delay={0}>
+            <div className="surface-card surface-hover flex h-full flex-col gap-3 p-6 border border-primary/10">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Store className="h-5 w-5" />
+                </span>
+                <h3 className="font-semibold text-foreground text-lg">Captura automática de ofertas</h3>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                Shopee, Amazon, AliExpress e AWIN — via API oficial. Preço, desconto e comissão
+                caem direto no painel, sem você precisar abrir o marketplace.
+              </p>
+              <div className="mt-auto pt-3 flex gap-2">
+                {['Shopee', 'Amazon', 'AliExpress', 'AWIN'].map((mp) => (
+                  <span key={mp} className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
+                    {mp}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Card médio */}
+          <Reveal className="md:col-span-3" delay={0.05}>
+            <div className="surface-card surface-hover flex h-full flex-col gap-3 p-6">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success">
+                  <Target className="h-5 w-5" />
+                </span>
+                <h3 className="font-semibold text-foreground text-lg">Disparo pro grupo certo</h3>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                Cada grupo de WhatsApp ou Telegram tem uma tag (Tech, Moda, Casa...). Oferta de
+                eletrônicos só vai pro grupo de eletrônicos. Sem spam, sem irrelevantes.
+              </p>
+            </div>
+          </Reveal>
+
+          {/* 3 cards menores */}
+          <Reveal className="md:col-span-2" delay={0.1}>
+            <div className="surface-card surface-hover flex h-full flex-col gap-3 p-5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-warning/10 text-warning">
+                <Send className="h-4 w-4" />
+              </span>
+              <h3 className="font-semibold text-foreground">Fila com retry</h3>
+              <p className="text-sm text-muted-foreground">
+                Se o WhatsApp falhar, tenta de novo automaticamente. Rate limit embutido.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal className="md:col-span-2" delay={0.15}>
+            <div className="surface-card surface-hover flex h-full flex-col gap-3 p-5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Bot className="h-4 w-4" />
+              </span>
+              <h3 className="font-semibold text-foreground">Regras automáticas</h3>
+              <p className="text-sm text-muted-foreground">
+                "Desconto {'>'} 30% e nicho Eletrônicos → Grupo X". Cria e esquece.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal className="md:col-span-2" delay={0.2}>
+            <div className="surface-card surface-hover flex h-full flex-col gap-3 p-5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground/5 text-foreground">
+                <BarChart3 className="h-4 w-4" />
+              </span>
+              <h3 className="font-semibold text-foreground">Analytics que importa</h3>
+              <p className="text-sm text-muted-foreground">
+                Qual marketplace converte mais. Qual grupo compra. Onde tá o dinheiro.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* COMO FUNCIONA - Tom conversacional */}
+      <section id="como-funciona" className="border-y border-border/60 bg-card/30">
+        <div className="mx-auto max-w-6xl px-4 py-20 lg:px-6">
+          <Reveal className="mx-auto max-w-2xl text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Como funciona na prática
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Três passos. Sem curso, sem tutorial de 2 horas.
+            </p>
+          </Reveal>
+
+          <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+            {STEPS.map((step, i) => (
+              <Reveal key={step.number} delay={Math.min(i, 14) * 0.05}>
+                <div className="relative surface-card p-6">
+                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 font-mono text-base font-bold text-primary">
+                    {step.number}
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground">{step.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{step.body}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* TRANSPARENCIA - Tom direto */}
       <section id="transparencia" className="mx-auto max-w-6xl px-4 py-20 lg:px-6">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Riscos operacionais transparentes
+            A gente não esconde os riscos
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Conexões não oficiais podem ser limitadas pela plataforma. Deixamos
-            isso claro na interface, com o status de cada instância.
+            Conexões não oficiais podem ser limitadas. A gente deixa isso claro na interface —
+            nãoierte atrás de UX bonitinho.
           </p>
         </Reveal>
 
         <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2">
           <Reveal>
-            <div className="surface-card flex gap-3 p-5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success">
-                <ShieldCheck className="h-4 w-4" />
+            <div className="surface-card flex gap-4 p-5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success">
+                <ShieldCheck className="h-5 w-5" />
               </span>
               <div>
                 <h3 className="font-semibold text-foreground">
-                  Só marketplaces com API oficial
+                  Só APIs oficiais de marketplace
                 </h3>
-                <p className="mt-1.5 text-sm text-muted-foreground">
-                  Shopee, Amazon PA-API, AliExpress e AWIN. Scraping de terceiros
-                  — como o do Mercado Livre — fica de fora da v1 por risco legal.
+                <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+                  Shopee, Amazon PA-API, AliExpress e AWIN. Scraping de terceiros — tipo o do
+                  Mercado Livre — fica de fora por risco legal. Se não tem API oficial, a gente não usa.
                 </p>
               </div>
             </div>
           </Reveal>
           <Reveal delay={0.05}>
-            <div className="surface-card flex gap-3 p-5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-warning/10 text-warning">
-                <ShieldAlert className="h-4 w-4" />
+            <div className="surface-card flex gap-4 p-5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
+                <ShieldAlert className="h-5 w-5" />
               </span>
               <div>
                 <h3 className="font-semibold text-foreground">
-                  WhatsApp tem risco real de ban
+                  WhatsApp pode banir. A gente avisa.
                 </h3>
-                <p className="mt-1.5 text-sm text-muted-foreground">
-                  Conexões via Baileys/Evolution não são suportadas pela Meta.
-                  O painel mostra o status de cada instância. Sempre que
-                  possível, use Telegram.
+                <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+                  Conexões via Baileys/Evolution não são suportadas pela Meta. O painel mostra
+                  o status de cada instância. Se pode, usa Telegram — é mais seguro.
                 </p>
               </div>
             </div>
@@ -535,20 +574,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* PLANOS */}
-      <section id="planos" className="border-t border-border/60 bg-card/40">
+      {/* PLANOS - Calculador simples, sem 3 cards genéricos */}
+      <section id="planos" className="border-t border-border/60 bg-card/30">
         <div className="mx-auto max-w-6xl px-4 py-20 lg:px-6">
           <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              Planos que crescem com a operação
+              Calcula o que faz sentido pro seu bolso
             </h2>
             <p className="mt-3 text-muted-foreground">
-              Selecione o volume de ofertas processadas por mês.
+              Arrasta o slider e vê o plano. Sem letra miúda, sem surpresa na hora de pagar.
             </p>
           </Reveal>
 
           <Reveal delay={0.05}>
-            <div className="mx-auto mt-10 max-w-2xl rounded-lg border border-border bg-card p-5">
+            <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-border/60 bg-card p-6 sm:p-8">
               <label
                 htmlFor="calc-ofertas"
                 className="block text-sm font-medium text-foreground"
@@ -564,136 +603,179 @@ export default function LandingPage() {
                   step={1000}
                   value={offersInput}
                   onChange={(e) => setOffersInput(Number(e.target.value))}
-                  className="flex-1 accent-primary"
+                  className="flex-1 accent-primary h-2"
                 />
-                <span className="w-28 shrink-0 text-right font-mono text-sm font-bold text-foreground tabular-nums">
+                <span className="w-28 shrink-0 text-right font-mono text-lg font-bold text-foreground tabular-nums">
                   {offersInput.toLocaleString('pt-BR')}
                 </span>
               </div>
-              <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-md border border-border bg-background/50 px-4 py-3 sm:flex-row">
-                <div>
-                  <p className="text-xs text-muted-foreground">Plano recomendado</p>
-                  <p className="text-sm font-semibold text-foreground">
-                    {(() => {
-                      const tier = offersInput <= 3000 ? 'STARTER' : offersInput <= 25000 ? 'PRO' : 'AGENCY';
-                      return plans.find((p: any) => p.tier === tier)?.name ?? 'Scale';
-                    })()}
-                  </p>
+
+              {/* Resultado do calculador */}
+              <div className="mt-6 rounded-xl border border-primary/20 bg-primary/5 p-5">
+                <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Plano recomendado</p>
+                    <p className="text-xl font-bold text-foreground mt-1">
+                      {recommendedPlan?.name ?? 'Scale'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Até{' '}
+                      {recommendedTier === 'STARTER'
+                        ? '3.000'
+                        : recommendedTier === 'PRO'
+                          ? '25.000'
+                          : '100.000'}{' '}
+                      ofertas/mês
+                    </p>
+                  </div>
+                  <div className="text-center sm:text-right">
+                    <p className="font-mono text-3xl font-bold text-foreground tabular-nums">
+                      R${' '}
+                      {(recommendedPlan?.priceBRL ?? 497).toLocaleString('pt-BR')}
+                    </p>
+                    <p className="text-xs text-muted-foreground">/mês</p>
+                  </div>
+                  <Button size="lg" asChild>
+                    <Link href="/register">
+                      Começar agora
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
                 </div>
-                <div className="text-right">
-                  <p className="font-mono text-lg font-bold text-foreground tabular-nums">
-                    R${' '}
-                    {(() => {
-                      const tier = offersInput <= 3000 ? 'STARTER' : offersInput <= 25000 ? 'PRO' : 'AGENCY';
-                      return (plans.find((p: any) => p.tier === tier)?.priceBRL ?? 497).toLocaleString('pt-BR');
-                    })()}
-                    <span className="text-xs font-normal text-muted-foreground">/mês</span>
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {offersInput <= 3000
-                      ? 'Até 3.000 ofertas'
-                      : offersInput <= 25000
-                        ? 'Até 25.000 ofertas'
-                        : 'Até 100.000 ofertas'}
-                  </p>
-                </div>
-                <Button asChild size="sm">
-                  <Link href="/register">Começar</Link>
-                </Button>
+              </div>
+
+              {/* Features do plano */}
+              <div className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {(recommendedPlan?.features ?? []).slice(0, 6).map((feature: string) => (
+                  <div key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="h-4 w-4 shrink-0 text-success" />
+                    {feature}
+                  </div>
+                ))}
               </div>
             </div>
           </Reveal>
-
-          <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {plans.map((plan: any, i: number) => {
-              const highlight = plan.tier === 'PRO';
-              return (
-                <Reveal key={plan.tier} delay={Math.min(i, 14) * 0.05}>
-                  <div
-                    className={`surface-card flex h-full flex-col p-6 ${
-                      highlight ? 'ring-1 ring-primary/40' : ''
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-foreground">{plan.name}</h3>
-                      {highlight && (
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                          Mais popular
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">{plan.tagline}</p>
-                    <p className="mt-4 font-mono text-3xl font-bold text-foreground tabular-nums">
-                      R$ {plan.priceBRL.toLocaleString('pt-BR')}
-                      <span className="text-sm font-normal text-muted-foreground">/mês</span>
-                    </p>
-                    <ul className="mt-5 flex-1 space-y-2 text-sm text-muted-foreground">
-                      {plan.features.map((feature: string) => (
-                        <li key={feature} className="flex gap-2">
-                          <Check className="h-4 w-4 shrink-0 text-success" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                    <Button
-                      className="mt-6 w-full"
-                      variant={highlight ? 'default' : 'outline'}
-                      asChild
-                    >
-                      <Link href="/register">Começar com {plan.name}</Link>
-                    </Button>
-                  </div>
-                </Reveal>
-              );
-            })}
-          </div>
         </div>
       </section>
 
-      {/* CTA FINAL */}
+      {/* PROVA SOCIAL - Números quebrados */}
+      <section className="mx-auto max-w-6xl px-4 py-16 lg:px-6">
+        <Reveal>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {[
+              ['1.247', 'ofertas processadas hoje'],
+              ['98.7%', 'de uptime nos últimos 30 dias'],
+              ['3.4', 'segundos tempo médio de disparo'],
+              ['42', 'grupos ativos no平台'],
+            ].map(([value, label], i) => (
+              <div key={label}>
+                <p className="font-mono text-2xl font-bold text-foreground tabular-nums">{value}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      </section>
+
+      {/* CTA FINAL - Tom pessoal */}
       <section className="mx-auto max-w-6xl px-4 py-20 lg:px-6">
         <Reveal>
-          <div className="surface-raised relative overflow-hidden p-8 text-center sm:p-12">
-            <h2 className="mx-auto max-w-xl text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              Sua operação de ofertas, em um único lugar
-            </h2>
-            <p className="mx-auto mt-3 max-w-lg text-muted-foreground">
-              Conecte os marketplaces, defina as regras e acompanhe cada
-              disparo.
-            </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button size="lg" asChild>
-                <Link href="/register">
-                  Testar gratuitamente
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/login">Já tenho conta</Link>
-              </Button>
+          <div className="surface-raised relative overflow-hidden rounded-2xl p-8 text-center sm:p-12">
+            {/* Gradient sutil */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 pointer-events-none" />
+
+            <div className="relative">
+              <h2 className="mx-auto max-w-xl text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                Chega de planilha e bot que quebra
+              </h2>
+              <p className="mx-auto mt-3 max-w-lg text-muted-foreground">
+                Testa grátis por 7 dias. Sem cartão, sem compromisso. Se não
+                servir, a gente nem cobra.
+              </p>
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Button size="lg" asChild>
+                  <Link href="/register">
+                    Testar grátis por 7 dias
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button size="lg" variant="ghost" asChild>
+                  <Link href="/login">Já tenho conta</Link>
+                </Button>
+              </div>
             </div>
           </div>
         </Reveal>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-border/60">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row lg:px-6">
-          <Logo />
-          <nav className="flex gap-4">
-            {NAV_LINKS.map(([href, label]) => (
-              <a
-                key={href}
-                href={href}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} AffiliateOS. Feito para operadores.
-          </p>
+      {/* ASSINATURA DO FUNDADOR */}
+      <section className="mx-auto max-w-6xl px-4 pb-16 lg:px-6">
+        <Reveal>
+          <div className="flex items-center gap-4 rounded-xl border border-border/40 bg-card/50 p-5 max-w-md mx-auto">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-lg">
+              M
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Marcus</p>
+              <p className="text-xs text-muted-foreground">Fundador do AffiliateOS</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                "Criei isso porque eu stesso usava planilha pra gerenciar 15 grupos."
+              </p>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* FOOTER COMPLETO - Colunas */}
+      <footer className="border-t border-border/60 bg-card/30">
+        <div className="mx-auto max-w-6xl px-4 py-12 lg:px-6">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+            {/* Produto */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Produto</h4>
+              <ul className="space-y-2">
+                <li><a href="#recursos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Recursos</a></li>
+                <li><a href="#planos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Preços</a></li>
+                <li><a href="#como-funciona" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Como funciona</a></li>
+                <li><Link href="/status" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Status</Link></li>
+              </ul>
+            </div>
+
+            {/* Empresa */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Empresa</h4>
+              <ul className="space-y-2">
+                <li><a href="#transparencia" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sobre</a></li>
+                <li><Link href="/contato" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contato</Link></li>
+              </ul>
+            </div>
+
+            {/* Suporte */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Suporte</h4>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Central de ajuda</a></li>
+                <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</a></li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Legal</h4>
+              <ul className="space-y-2">
+                <li><Link href="/privacidade" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacidade</Link></li>
+                <li><Link href="/cookies" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Cookies</Link></li>
+                <li><Link href="/termos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Termos</Link></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border/60 pt-8 sm:flex-row">
+            <Logo />
+            <p className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} AffiliateOS. Feito por quem opera.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

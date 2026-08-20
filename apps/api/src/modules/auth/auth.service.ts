@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/co
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -27,6 +28,28 @@ export class AuthService {
       },
     });
 
+    return this.generateTokens(user);
+  }
+
+  /**
+   * Sincroniza um usuário autenticado via provedor OAuth (Google/GitHub/Apple)
+   * com o banco. Cria o Tenant + User (role OWNER) na primeira vez; depois é
+   * idempotente. O e-mail vem do token validado do Supabase (não do body).
+   */
+  async syncOAuthUser(email: string) {
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) return this.generateTokens(existing);
+
+    const hashed = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 12);
+    const tenant = await this.prisma.tenant.create({ data: { name: email } });
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        passwordHash: hashed,
+        tenantId: tenant.id,
+        role: 'OWNER',
+      },
+    });
     return this.generateTokens(user);
   }
 

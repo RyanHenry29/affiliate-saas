@@ -8,8 +8,22 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && data.session) {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        if (apiUrl) {
+          await fetch(`${apiUrl}/auth/oauth-sync`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${data.session.access_token}`,
+            },
+          });
+        }
+      } catch {
+        // best-effort: não bloquear o login se o sync com a API falhar
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

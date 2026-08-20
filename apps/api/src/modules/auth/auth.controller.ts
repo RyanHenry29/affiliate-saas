@@ -22,6 +22,11 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post('oauth-sync')
+  oauthSync(@CurrentUser('email') email: string) {
+    return this.authService.syncOAuthUser(email);
+  }
+
   @Post('refresh')
   refresh(@CurrentUser('id') userId: string) {
     return this.authService.refreshToken(userId);

@@ -97,6 +97,10 @@ export const api = {
     }),
   logout: () => apiRequest<void>("/auth/logout", { method: "POST" }),
   me: () => apiRequest<AuthUserResponse>("/auth/me"),
+  oauthSync: () =>
+    apiRequest<{ user: AuthUserResponse }>("/auth/oauth-sync", {
+      method: "POST",
+    }),
   listGroups: () => apiRequest<Group[]>("/groups"),
   createGroup: (data: {
     externalId: string;

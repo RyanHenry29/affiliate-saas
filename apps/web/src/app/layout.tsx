@@ -17,7 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "AffiliateOS — Automação de marketing de afiliados",
+    default: "AffiliateOS",
     template: "%s | AffiliateOS",
   },
   description:
@@ -58,8 +58,9 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
+    shortcut: "/favicon.svg",
   },
 };
 
