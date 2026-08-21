@@ -39,7 +39,7 @@ function SidebarContent({ pathname, user, me, isAdmin, logout, onNavigate }: {
   const groups = isAdmin
     ? [...BASE_GROUPS, { title: "Sistema", items: [["/admin", "Administração", ShieldCheck] as NavItem] }]
     : BASE_GROUPS;
-  const tenantName = me?.tenant?.name ?? user?.tenantName ?? "Workspace";
+  const tenantName = me?.tenantName ?? user?.tenantName ?? "Workspace";
   const email = me?.email ?? user?.email ?? "";
 
   return (

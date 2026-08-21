@@ -17,9 +17,9 @@ const fetcher = (url: string) => api.get(url);
 export function AppHeader() {
   const pathname = usePathname(); const { user, logout } = useAuth();
   const { data: me } = useSWR<any>("/auth/me", fetcher, { dedupingInterval: 60_000, errorRetryCount: 1 });
-  const tenantName = me?.tenant?.name ?? user?.tenantName ?? "Workspace";
+  const tenantName = me?.tenantName ?? user?.tenantName ?? "Workspace";
   const email = me?.email ?? user?.email ?? "";
-  const subscriptionStatus = me?.tenant?.subscription?.status ?? (me?.isAdminMaster ? "ACTIVE" : "TRIALING");
+  const subscriptionStatus = me?.subscription?.status ?? (me?.isAdminMaster ? "ACTIVE" : "TRIALING");
   return <header className="sticky top-0 z-40 border-b bg-card">
     <div className="flex h-16 items-center justify-between gap-3 px-4 lg:px-6">
       <div className="flex min-w-0 items-center gap-3"><Link href="/dashboard" className="lg:hidden"><div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground"><Zap className="h-4 w-4" /></div></Link><div className="hidden items-center gap-2 rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground md:flex md:w-[300px]"><Search className="h-4 w-4" />Buscar em tudo...<kbd className="ml-auto flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px]"><Command className="h-3 w-3" />K</kbd></div><div className="min-w-0 md:hidden"><p className="truncate text-sm font-semibold">{tenantName}</p></div></div>

@@ -27,6 +27,16 @@ async function bootstrap(): Promise<void> {
         },
   );
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+
+  const expressInstance = app.getHttpAdapter().getInstance();
+  expressInstance.get('/', (_req: any, res: any) => {
+    res.json({
+      status: 'ok',
+      service: 'affiliate-saas-api',
+      time: new Date().toISOString(),
+    });
+  });
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   Logger.log(`API rodando na porta ${port}`, 'Bootstrap');
