@@ -13,7 +13,7 @@ export class MonitoringController {
   }
 
   @Get('errors')
-  errors(@CurrentUser() _user: AuthUser, @Query('limit') limit?: string) {
-    return this.monitoringService.recentErrors(Number(limit) || 50);
+  errors(@CurrentUser() user: AuthUser, @Query('limit') limit?: string) {
+    return this.monitoringService.recentErrors(user.tenantId, Number(limit) || 50);
   }
 }

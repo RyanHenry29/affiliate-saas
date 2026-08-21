@@ -32,7 +32,7 @@ export class AuthService {
   }
 
   /**
-   * Sincroniza um usuário autenticado via provedor OAuth (Google/GitHub/Apple)
+   * Sincroniza um usuário autenticado via provedor OAuth (Google/GitHub)
    * com o banco. Cria o Tenant + User (role OWNER) na primeira vez; depois é
    * idempotente. O e-mail vem do token validado do Supabase (não do body).
    */

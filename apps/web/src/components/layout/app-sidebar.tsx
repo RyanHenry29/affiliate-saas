@@ -28,9 +28,10 @@ const BASE_GROUPS: NavGroup[] = [
   ]},
 ];
 
-function SidebarContent({ pathname, user, isAdmin, logout, onNavigate }: {
+function SidebarContent({ pathname, user, me, isAdmin, logout, onNavigate }: {
   pathname: string;
   user: any;
+  me: any;
   isAdmin: boolean;
   logout: () => void;
   onNavigate?: () => void;
@@ -38,6 +39,8 @@ function SidebarContent({ pathname, user, isAdmin, logout, onNavigate }: {
   const groups = isAdmin
     ? [...BASE_GROUPS, { title: "Sistema", items: [["/admin", "Administração", ShieldCheck] as NavItem] }]
     : BASE_GROUPS;
+  const tenantName = me?.tenant?.name ?? user?.tenantName ?? "Workspace";
+  const email = me?.email ?? user?.email ?? "";
 
   return (
     <>
@@ -49,7 +52,7 @@ function SidebarContent({ pathname, user, isAdmin, logout, onNavigate }: {
       <nav className="flex-1 space-y-5 overflow-y-auto p-3">
         {groups.map((group) => <div key={group.title}><p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">{group.title}</p><div className="space-y-1">{group.items.map(([href,label,Icon]) => { const active = pathname === href || pathname.startsWith(`${href}/`); return <Link key={href} href={href} onClick={onNavigate} className={cn("group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all", active ? "bg-primary/10 text-primary ring-1 ring-primary/15" : "text-muted-foreground hover:bg-accent hover:text-foreground")}><Icon className="h-4 w-4 shrink-0" />{label}{active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}</Link>; })}</div></div>)}
       </nav>
-      <div className="border-t p-3"><div className="mb-2 flex items-center gap-3 rounded-lg px-2 py-2"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-bold">{(user?.email?.[0] ?? "A").toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{user?.tenantName ?? "Workspace"}</p><p className="truncate text-[11px] text-muted-foreground">{user?.email ?? ""}</p></div></div><Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => { void logout(); onNavigate?.(); }}><LogOut className="mr-2 h-4 w-4" />Sair</Button></div>
+      <div className="border-t p-3"><div className="mb-2 flex items-center gap-3 rounded-lg px-2 py-2"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-bold">{(email?.[0] ?? "A").toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{tenantName}</p><p className="truncate text-[11px] text-muted-foreground">{email}</p></div></div><Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => { void logout(); onNavigate?.(); }}><LogOut className="mr-2 h-4 w-4" />Sair</Button></div>
     </>
   );
 }
@@ -72,7 +75,7 @@ export function AppSidebar() {
     <>
       {/* Desktop sidebar */}
       <aside className="hidden w-[248px] shrink-0 flex-col border-r bg-card lg:flex">
-        <SidebarContent pathname={pathname} user={user} isAdmin={isAdmin} logout={logout} />
+        <SidebarContent pathname={pathname} user={user} me={me} isAdmin={isAdmin} logout={logout} />
       </aside>
 
       {/* Mobile sidebar trigger */}
@@ -104,6 +107,7 @@ export function AppSidebar() {
             <SidebarContent
               pathname={pathname}
               user={user}
+              me={me}
               isAdmin={isAdmin}
               logout={logout}
               onNavigate={() => setMobileOpen(false)}

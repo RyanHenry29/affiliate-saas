@@ -45,7 +45,7 @@ export class OffersController {
 
   @Post('import')
   importOffer(@CurrentUser() user: AuthUser, @Body() dto: ImportOfferDto) {
-    return this.offersService.importOffer(dto);
+    return this.offersService.importOffer(dto, user.tenantId);
   }
 
   @Post('mine/shopee')

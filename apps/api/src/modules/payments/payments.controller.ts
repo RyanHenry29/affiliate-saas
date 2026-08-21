@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Body, Param, Sse, Headers, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Sse, Headers, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/types/auth-user.type';
 import { Public } from '../../common/decorators/public.decorator';
 import { Observable, map } from 'rxjs';
 import { MessageEvent } from '@nestjs/common';
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 @Controller('payments')
 export class PaymentsController {
@@ -54,13 +54,19 @@ export class PaymentsController {
   @Post('webhook')
   webhook(@Body() payload: any, @Headers('x-signature') signature?: string) {
     const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
-    if (webhookSecret && signature) {
-      const expected = createHmac('sha256', webhookSecret)
-        .update(JSON.stringify(payload))
-        .digest('hex');
-      if (signature !== expected) {
-        throw new ForbiddenException('Assinatura do webhook inválida');
-      }
+    if (!webhookSecret) {
+      throw new BadRequestException('MERCADOPAGO_WEBHOOK_SECRET is not configured');
+    }
+    if (!signature) {
+      throw new ForbiddenException('Assinatura do webhook não fornecida');
+    }
+    const expected = createHmac('sha256', webhookSecret)
+      .update(JSON.stringify(payload))
+      .digest('hex');
+    const sigBuf = Buffer.from(signature, 'hex');
+    const expBuf = Buffer.from(expected, 'hex');
+    if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
+      throw new ForbiddenException('Assinatura do webhook inválida');
     }
     return this.paymentsService.handleWebhook(payload);
   }

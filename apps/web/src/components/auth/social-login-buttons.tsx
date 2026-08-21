@@ -3,18 +3,17 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { GoogleIcon, GithubIcon, AppleIcon } from "./brand-icons";
+import { GoogleIcon, GithubIcon } from "./brand-icons";
 
 const PROVIDERS = [
   { id: "google", label: "Google", Icon: GoogleIcon },
   { id: "github", label: "GitHub", Icon: GithubIcon },
-  { id: "apple", label: "Apple", Icon: AppleIcon },
 ] as const;
 
 export function SocialLoginButtons() {
   const [pending, setPending] = useState<string | null>(null);
 
-  async function signInWith(provider: "google" | "github" | "apple") {
+  async function signInWith(provider: "google" | "github") {
     const supabase = createClient();
     if (!supabase) return;
     setPending(provider);

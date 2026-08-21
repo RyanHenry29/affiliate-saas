@@ -14,7 +14,7 @@ const RELEASES = [
       fixed: ['Correção de centavos vs reais no pagamento do Mercado Pago'],
       improved: [
         'Sidebar agora mostra o status real dos serviços',
-        'Login com ícones dos provedores (Google, Apple, GitHub)',
+        'Login com ícones dos provedores (Google, GitHub)',
       ],
     },
   },

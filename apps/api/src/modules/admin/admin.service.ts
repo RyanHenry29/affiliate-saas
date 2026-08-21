@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpsertFeatureFlagDto } from './dto/upsert-feature-flag.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { UpdatePaymentConfigDto } from './dto/update-payment-config.dto';
 import { SetTenantSubscriptionDto } from './dto/set-tenant-subscription.dto';
+
+const VALID_ROLES = ['OWNER', 'ADMIN_MASTER', 'OPERATOR', 'MEMBER', 'ANALYST', 'VIEWER'];
 
 @Injectable()
 export class AdminService {
@@ -108,6 +110,9 @@ export class AdminService {
   }
 
   async setUserRole(userId: string, role: string) {
+    if (!VALID_ROLES.includes(role)) {
+      throw new BadRequestException(`Role inválida. Valores aceitos: ${VALID_ROLES.join(', ')}`);
+    }
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('Usuário não encontrado');
     return this.prisma.user.update({ where: { id: userId }, data: { role } });

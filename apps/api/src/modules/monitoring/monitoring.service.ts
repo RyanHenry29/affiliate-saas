@@ -33,9 +33,9 @@ export class MonitoringService {
     };
   }
 
-  async recentErrors(limit = 50) {
+  async recentErrors(tenantId: string, limit = 50) {
     const jobs = await this.prisma.dispatchJob.findMany({
-      where: { status: { in: ['FAILED', 'RATE_LIMITED'] } },
+      where: { tenantId, status: { in: ['FAILED', 'RATE_LIMITED'] } },
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {

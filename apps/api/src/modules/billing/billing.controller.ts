@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Headers, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Headers, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/types/auth-user.type';
 import { Public } from '../../common/decorators/public.decorator';
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 @Controller('billing')
 export class BillingController {
@@ -35,13 +35,19 @@ export class BillingController {
   @Post('webhook')
   webhook(@Body() payload: any, @Headers('x-webhook-signature') signature?: string) {
     const webhookSecret = process.env.BILLING_WEBHOOK_SECRET;
-    if (webhookSecret && signature) {
-      const expected = createHmac('sha256', webhookSecret)
-        .update(JSON.stringify(payload))
-        .digest('hex');
-      if (signature !== expected) {
-        throw new ForbiddenException('Assinatura do webhook inválida');
-      }
+    if (!webhookSecret) {
+      throw new BadRequestException('BILLING_WEBHOOK_SECRET is not configured');
+    }
+    if (!signature) {
+      throw new ForbiddenException('Assinatura do webhook não fornecida');
+    }
+    const expected = createHmac('sha256', webhookSecret)
+      .update(JSON.stringify(payload))
+      .digest('hex');
+    const sigBuf = Buffer.from(signature, 'hex');
+    const expBuf = Buffer.from(expected, 'hex');
+    if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
+      throw new ForbiddenException('Assinatura do webhook inválida');
     }
     return this.billingService.handleWebhook(payload);
   }

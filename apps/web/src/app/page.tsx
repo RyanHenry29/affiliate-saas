@@ -708,24 +708,6 @@ export default function LandingPage() {
         </Reveal>
       </section>
 
-      {/* ASSINATURA DO FUNDADOR */}
-      <section className="mx-auto max-w-6xl px-4 pb-16 lg:px-6">
-        <Reveal>
-          <div className="flex items-center gap-4 rounded-xl border border-border/40 bg-card/50 p-5 max-w-md mx-auto">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-lg">
-              M
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">Marcus</p>
-              <p className="text-xs text-muted-foreground">Fundador do AffiliateOS</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                "Criei isso porque eu stesso usava planilha pra gerenciar 15 grupos."
-              </p>
-            </div>
-          </div>
-        </Reveal>
-      </section>
-
       {/* FOOTER COMPLETO - Colunas */}
       <footer className="border-t border-border/60 bg-card/30">
         <div className="mx-auto max-w-6xl px-4 py-12 lg:px-6">

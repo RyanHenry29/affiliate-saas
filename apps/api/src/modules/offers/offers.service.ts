@@ -194,7 +194,7 @@ Exemplo de saída:
     });
   }
 
-  async importOffer(dto: ImportOfferDto) {
+  async importOffer(dto: ImportOfferDto, _tenantId: string) {
     if (!dto.title && !dto.priceCents) {
       throw new BadRequestException('Informe ao menos um título ou preço para a oferta.');
     }

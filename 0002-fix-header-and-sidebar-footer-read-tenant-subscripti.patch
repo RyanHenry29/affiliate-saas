@@ -1,0 +1,101 @@
+From 67f20efc285a905e0e5c71eaa7bdccb66532fe55 Mon Sep 17 00:00:00 2001
+From: Claude <claude@anthropic.com>
+Date: Fri, 21 Aug 2026 11:00:40 +0000
+Subject: [PATCH 2/2] fix: header and sidebar footer read
+ tenant/subscription/email from /auth/me instead of stale Supabase
+ user_metadata
+
+---
+ apps/web/src/components/layout/app-header.tsx  | 12 ++++++++++--
+ apps/web/src/components/layout/app-sidebar.tsx | 10 +++++++---
+ 2 files changed, 17 insertions(+), 5 deletions(-)
+
+diff --git a/apps/web/src/components/layout/app-header.tsx b/apps/web/src/components/layout/app-header.tsx
+index 216c9ee..5ae5ce1 100644
+--- a/apps/web/src/components/layout/app-header.tsx
++++ b/apps/web/src/components/layout/app-header.tsx
+@@ -2,20 +2,28 @@
+ 
+ import Link from "next/link";
+ import { usePathname } from "next/navigation";
++import useSWR from "swr";
+ import { Bell, Command, LogOut, Search, Zap } from "lucide-react";
+ import { cn } from "@/lib/utils";
+ import { Button } from "@/components/ui/button";
+ import { useAuth } from "@/lib/auth";
++import { api } from "@/lib/api";
+ import { SubscriptionBadge } from "@/components/status-badge";
+ 
+ const MOBILE_NAV = [["/dashboard","Início"],["/offers","Ofertas"],["/groups","Grupos"],["/messaging","Mensagens"],["/billing","Plano"]];
+ 
++const fetcher = (url: string) => api.get(url);
++
+ export function AppHeader() {
+   const pathname = usePathname(); const { user, logout } = useAuth();
++  const { data: me } = useSWR<any>("/auth/me", fetcher, { dedupingInterval: 60_000, errorRetryCount: 1 });
++  const tenantName = me?.tenant?.name ?? user?.tenantName ?? "Workspace";
++  const email = me?.email ?? user?.email ?? "";
++  const subscriptionStatus = me?.tenant?.subscription?.status ?? (me?.isAdminMaster ? "ACTIVE" : "TRIALING");
+   return <header className="sticky top-0 z-40 border-b bg-card">
+     <div className="flex h-16 items-center justify-between gap-3 px-4 lg:px-6">
+-      <div className="flex min-w-0 items-center gap-3"><Link href="/dashboard" className="lg:hidden"><div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground"><Zap className="h-4 w-4" /></div></Link><div className="hidden items-center gap-2 rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground md:flex md:w-[300px]"><Search className="h-4 w-4" />Buscar em tudo...<kbd className="ml-auto flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px]"><Command className="h-3 w-3" />K</kbd></div><div className="min-w-0 md:hidden"><p className="truncate text-sm font-semibold">{user?.tenantName ?? "Workspace"}</p></div></div>
+-      <div className="flex items-center gap-1.5"><button className="hidden rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground hover:bg-accent md:flex" onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key:"k", ctrlKey:true }))}><Search className="mr-2 h-3.5 w-3.5"/>Busca rápida</button><Button variant="ghost" size="icon" aria-label="Notificações" className="relative"><Bell className="h-4 w-4" /><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary ring-2 ring-background" /></Button><div className="hidden items-center gap-2 pl-2 sm:flex"><div className="h-8 w-8 rounded-full bg-secondary text-center text-xs font-bold leading-8">{(user?.email?.[0] ?? "A").toUpperCase()}</div><div className="hidden xl:block"><p className="text-xs font-semibold">{user?.tenantName ?? "Workspace"}</p><SubscriptionBadge status={(user as any)?.subscription?.status ?? (user?.isAdminMaster ? "ACTIVE" : "TRIALING")} /></div></div><Button variant="ghost" size="icon" onClick={() => void logout()} aria-label="Sair" className="sm:hidden"><LogOut className="h-4 w-4" /></Button></div>
++      <div className="flex min-w-0 items-center gap-3"><Link href="/dashboard" className="lg:hidden"><div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground"><Zap className="h-4 w-4" /></div></Link><div className="hidden items-center gap-2 rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground md:flex md:w-[300px]"><Search className="h-4 w-4" />Buscar em tudo...<kbd className="ml-auto flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px]"><Command className="h-3 w-3" />K</kbd></div><div className="min-w-0 md:hidden"><p className="truncate text-sm font-semibold">{tenantName}</p></div></div>
++      <div className="flex items-center gap-1.5"><button className="hidden rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground hover:bg-accent md:flex" onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key:"k", ctrlKey:true }))}><Search className="mr-2 h-3.5 w-3.5"/>Busca rápida</button><Button variant="ghost" size="icon" aria-label="Notificações" className="relative"><Bell className="h-4 w-4" /><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary ring-2 ring-background" /></Button><div className="hidden items-center gap-2 pl-2 sm:flex"><div className="h-8 w-8 rounded-full bg-secondary text-center text-xs font-bold leading-8">{(email?.[0] ?? "A").toUpperCase()}</div><div className="hidden xl:block"><p className="text-xs font-semibold">{tenantName}</p><SubscriptionBadge status={subscriptionStatus} /></div></div><Button variant="ghost" size="icon" onClick={() => void logout()} aria-label="Sair" className="sm:hidden"><LogOut className="h-4 w-4" /></Button></div>
+     </div>
+     <nav className="flex gap-1 overflow-x-auto border-t px-3 py-1.5 lg:hidden">{MOBILE_NAV.map(([href,label]) => { const active=pathname===href||pathname.startsWith(`${href}/`); return <Link key={href} href={href} className={cn("whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium", active?"bg-accent text-foreground":"text-muted-foreground")}>{label}</Link> })}</nav>
+   </header>;
+diff --git a/apps/web/src/components/layout/app-sidebar.tsx b/apps/web/src/components/layout/app-sidebar.tsx
+index 6695c23..919edff 100644
+--- a/apps/web/src/components/layout/app-sidebar.tsx
++++ b/apps/web/src/components/layout/app-sidebar.tsx
+@@ -28,9 +28,10 @@ const BASE_GROUPS: NavGroup[] = [
+   ]},
+ ];
+ 
+-function SidebarContent({ pathname, user, isAdmin, logout, onNavigate }: {
++function SidebarContent({ pathname, user, me, isAdmin, logout, onNavigate }: {
+   pathname: string;
+   user: any;
++  me: any;
+   isAdmin: boolean;
+   logout: () => void;
+   onNavigate?: () => void;
+@@ -38,6 +39,8 @@ function SidebarContent({ pathname, user, isAdmin, logout, onNavigate }: {
+   const groups = isAdmin
+     ? [...BASE_GROUPS, { title: "Sistema", items: [["/admin", "Administração", ShieldCheck] as NavItem] }]
+     : BASE_GROUPS;
++  const tenantName = me?.tenant?.name ?? user?.tenantName ?? "Workspace";
++  const email = me?.email ?? user?.email ?? "";
+ 
+   return (
+     <>
+@@ -49,7 +52,7 @@ function SidebarContent({ pathname, user, isAdmin, logout, onNavigate }: {
+       <nav className="flex-1 space-y-5 overflow-y-auto p-3">
+         {groups.map((group) => <div key={group.title}><p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">{group.title}</p><div className="space-y-1">{group.items.map(([href,label,Icon]) => { const active = pathname === href || pathname.startsWith(`${href}/`); return <Link key={href} href={href} onClick={onNavigate} className={cn("group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all", active ? "bg-primary/10 text-primary ring-1 ring-primary/15" : "text-muted-foreground hover:bg-accent hover:text-foreground")}><Icon className="h-4 w-4 shrink-0" />{label}{active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}</Link>; })}</div></div>)}
+       </nav>
+-      <div className="border-t p-3"><div className="mb-2 flex items-center gap-3 rounded-lg px-2 py-2"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-bold">{(user?.email?.[0] ?? "A").toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{user?.tenantName ?? "Workspace"}</p><p className="truncate text-[11px] text-muted-foreground">{user?.email ?? ""}</p></div></div><Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => { void logout(); onNavigate?.(); }}><LogOut className="mr-2 h-4 w-4" />Sair</Button></div>
++      <div className="border-t p-3"><div className="mb-2 flex items-center gap-3 rounded-lg px-2 py-2"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-bold">{(email?.[0] ?? "A").toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{tenantName}</p><p className="truncate text-[11px] text-muted-foreground">{email}</p></div></div><Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => { void logout(); onNavigate?.(); }}><LogOut className="mr-2 h-4 w-4" />Sair</Button></div>
+     </>
+   );
+ }
+@@ -72,7 +75,7 @@ export function AppSidebar() {
+     <>
+       {/* Desktop sidebar */}
+       <aside className="hidden w-[248px] shrink-0 flex-col border-r bg-card lg:flex">
+-        <SidebarContent pathname={pathname} user={user} isAdmin={isAdmin} logout={logout} />
++        <SidebarContent pathname={pathname} user={user} me={me} isAdmin={isAdmin} logout={logout} />
+       </aside>
+ 
+       {/* Mobile sidebar trigger */}
+@@ -104,6 +107,7 @@ export function AppSidebar() {
+             <SidebarContent
+               pathname={pathname}
+               user={user}
++              me={me}
+               isAdmin={isAdmin}
+               logout={logout}
+               onNavigate={() => setMobileOpen(false)}
+-- 
+2.43.0
+
