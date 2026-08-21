@@ -7,6 +7,6 @@
     }
   ],
   "env": {
-    "CORS_ORIGIN": "https://affiliate-saas.vercel.app"
+    "CORS_ORIGIN": "https://affiliate-saas-chi.vercel.app,http://localhost:3000,http://localhost:3001"
   }
 }

@@ -61,7 +61,7 @@ infra/docker/     # Postgres + Redis para dev local (docker-compose)
 | `JWT_SECRET` / `JWT_REFRESH_SECRET` | sim | JWTs internos da API |
 | `ENCRYPTION_KEY` | sim | chave de criptografia (32 chars) |
 | `SUPABASE_JWT_SECRET` | sim | valida JWTs do Supabase |
-| `CORS_ORIGIN` | sim | origem do frontend (`https://affiliate-saas.vercel.app`) |
+| `CORS_ORIGIN` | sim | origem do frontend (`https://affiliate-saas-chi.vercel.app`; inclua localhost para dev) |
 | `EVOLUTION_API_URL` / `EVOLUTION_API_KEY` | não | gateway de mensagens |
 | `LLM_*` | não | provedor de LLM (fallback) |
 
