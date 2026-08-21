@@ -736,8 +736,8 @@ export default function LandingPage() {
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-3">Suporte</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Central de ajuda</a></li>
-                <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</a></li>
+                <li><Link href="/contato" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Central de ajuda</Link></li>
+                <li><Link href="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</Link></li>
               </ul>
             </div>
 
