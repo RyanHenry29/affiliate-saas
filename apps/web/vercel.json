@@ -1,6 +1,5 @@
 {
-  "installCommand": "npm install -g pnpm@9.12.0 && pnpm install --prod=false",
-  "buildCommand": "pnpm build",
-  "outputDirectory": ".next",
-  "framework": "nextjs"
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://affiliate-saas-api.vercel.app/api"
+  }
 }

@@ -5,5 +5,8 @@
       "source": "/(.*)",
       "destination": "/api/serverless"
     }
-  ]
+  ],
+  "env": {
+    "CORS_ORIGIN": "https://affiliate-saas.vercel.app"
+  }
 }
